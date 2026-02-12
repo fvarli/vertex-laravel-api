@@ -16,6 +16,7 @@ class AuthService
             'email'    => $data['email'],
             'phone'    => $data['phone'] ?? null,
             'password' => $data['password'],
+            'is_active' => true,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -33,6 +34,12 @@ class AuthService
         }
 
         $user = Auth::user();
+
+        if (! $user->is_active) {
+            Auth::guard('web')->logout();
+            throw new AuthenticationException('Your account has been deactivated.');
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return ['user' => $user, 'token' => $token];
@@ -41,5 +48,10 @@ class AuthService
     public function logout(User $user): void
     {
         $user->currentAccessToken()->delete();
+    }
+
+    public function logoutAll(User $user): void
+    {
+        $user->tokens()->delete();
     }
 }
