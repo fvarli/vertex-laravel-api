@@ -29,7 +29,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'Vertex API v1 includes auth, profile, email verification, health, and rate-limited security-sensitive endpoints.',
+        'description' => 'Vertex API v1 provides authentication, profile management, email verification, health checks, and rate-limited security-sensitive endpoints with a consistent JSON response contract.',
     ],
 
     /*
@@ -89,7 +89,9 @@ return [
      * ],
      * ```
      */
-    'servers' => null,
+    'servers' => [
+        'Local' => rtrim(env('APP_URL', 'http://localhost'), '/').'/api',
+    ],
 
     /**
      * Determines how Scramble stores the descriptions of enum cases.

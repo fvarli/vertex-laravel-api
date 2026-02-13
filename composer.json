@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "vertex/vertex-laravel-api",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Versioned REST API skeleton for Vertex, built with Laravel 12 and Sanctum.",
+    "keywords": ["vertex", "api", "laravel", "sanctum"],
     "license": "MIT",
     "require": {
         "php": "^8.2",
