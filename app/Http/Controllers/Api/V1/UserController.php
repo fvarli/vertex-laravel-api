@@ -10,6 +10,9 @@ use Illuminate\Http\Request;
 
 class UserController extends BaseController
 {
+    /**
+     * List users with pagination.
+     */
     public function index(Request $request): JsonResponse
     {
         $perPage = min(max((int) $request->query('per_page', 15), 1), 50);

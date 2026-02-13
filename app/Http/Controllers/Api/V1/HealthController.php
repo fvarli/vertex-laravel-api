@@ -11,6 +11,9 @@ class HealthController
         private readonly HealthService $healthService,
     ) {}
 
+    /**
+     * Run health checks for database, cache and queue.
+     */
     public function __invoke(): JsonResponse
     {
         $result = $this->healthService->runChecks();

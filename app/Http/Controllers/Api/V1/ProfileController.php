@@ -20,11 +20,17 @@ class ProfileController extends BaseController
         private readonly ApiLogService $apiLogService,
     ) {}
 
+    /**
+     * Return authenticated user profile.
+     */
     public function show(Request $request): JsonResponse
     {
         return $this->sendResponse(new UserResource($request->user()));
     }
 
+    /**
+     * Update authenticated user profile fields.
+     */
     public function update(UpdateProfileRequest $request): JsonResponse
     {
         $user = $this->profileService->updateProfile($request->user(), $request->validated());
@@ -36,6 +42,9 @@ class ProfileController extends BaseController
         return $this->sendResponse(new UserResource($user), __('api.profile.updated'));
     }
 
+    /**
+     * Change authenticated user password.
+     */
     public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
         $this->profileService->changePassword($request->user(), $request->validated('password'));
@@ -45,6 +54,9 @@ class ProfileController extends BaseController
         return $this->sendResponse([], __('api.profile.password_changed'));
     }
 
+    /**
+     * Upload or replace authenticated user avatar.
+     */
     public function updateAvatar(UpdateAvatarRequest $request): JsonResponse
     {
         $user = $this->profileService->updateAvatar($request->user(), $request->file('avatar'));
@@ -54,6 +66,9 @@ class ProfileController extends BaseController
         return $this->sendResponse(new UserResource($user), __('api.profile.avatar_uploaded'));
     }
 
+    /**
+     * Delete authenticated user avatar.
+     */
     public function deleteAvatar(Request $request): JsonResponse
     {
         $this->profileService->deleteAvatar($request->user());
@@ -63,6 +78,9 @@ class ProfileController extends BaseController
         return $this->sendResponse([], __('api.profile.avatar_deleted'));
     }
 
+    /**
+     * Soft delete authenticated user account and revoke tokens.
+     */
     public function destroy(DeleteAccountRequest $request): JsonResponse
     {
         $this->profileService->deleteAccount($request->user());

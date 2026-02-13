@@ -8,6 +8,9 @@ use Illuminate\Http\Request;
 
 class EmailVerificationController extends BaseController
 {
+    /**
+     * Verify authenticated user's email via signed URL parameters.
+     */
     public function verify(Request $request, int $id, string $hash): JsonResponse
     {
         $user = $request->user();
@@ -29,6 +32,9 @@ class EmailVerificationController extends BaseController
         return $this->sendResponse([], __('api.verification.verified'));
     }
 
+    /**
+     * Resend verification email for authenticated user.
+     */
     public function resend(Request $request): JsonResponse
     {
         if ($request->user()->hasVerifiedEmail()) {

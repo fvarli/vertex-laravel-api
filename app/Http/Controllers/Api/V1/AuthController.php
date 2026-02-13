@@ -22,6 +22,9 @@ class AuthController extends BaseController
         private readonly ApiLogService $apiLogService,
     ) {}
 
+    /**
+     * Register a new user and return an access token.
+     */
     public function register(RegisterRequest $request): JsonResponse
     {
         $result = $this->authService->register($request->validated());
@@ -37,6 +40,9 @@ class AuthController extends BaseController
         ], __('api.auth.registered'), 201);
     }
 
+    /**
+     * Authenticate user credentials and return an access token.
+     */
     public function login(LoginRequest $request): JsonResponse
     {
         try {
@@ -60,6 +66,9 @@ class AuthController extends BaseController
         ], __('api.auth.login_success'));
     }
 
+    /**
+     * Revoke the current access token.
+     */
     public function logout(Request $request): JsonResponse
     {
         $this->authService->logout($request->user());
@@ -69,6 +78,9 @@ class AuthController extends BaseController
         return $this->sendResponse([], __('api.auth.logged_out'));
     }
 
+    /**
+     * Revoke all access tokens for the authenticated user.
+     */
     public function logoutAll(Request $request): JsonResponse
     {
         $this->authService->logoutAll($request->user());
@@ -78,6 +90,9 @@ class AuthController extends BaseController
         return $this->sendResponse([], __('api.auth.logged_out_all'));
     }
 
+    /**
+     * Send password reset link if the email exists.
+     */
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
         $this->authService->sendResetLink($request->validated('email'));
@@ -89,6 +104,9 @@ class AuthController extends BaseController
         return $this->sendResponse([], __('api.password.reset_link'));
     }
 
+    /**
+     * Reset user password using reset token.
+     */
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
         $status = $this->authService->resetPassword($request->validated());
@@ -109,6 +127,9 @@ class AuthController extends BaseController
         return $this->sendError(__('api.password.reset_failed'), [], 400);
     }
 
+    /**
+     * Rotate and return a fresh access token for the authenticated user.
+     */
     public function refreshToken(Request $request): JsonResponse
     {
         $token = $this->authService->refreshToken($request->user());
