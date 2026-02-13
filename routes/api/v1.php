@@ -7,31 +7,60 @@ use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
+// Public routes
 Route::get('/health', HealthController::class)->name('v1.health');
 
-Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register')->name('v1.auth.register');
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('v1.auth.login');
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:forgot-password')->name('v1.auth.forgot-password');
-Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:reset-password')->name('v1.auth.reset-password');
+Route::controller(AuthController::class)->group(function () {
+    Route::post('/register', 'register')
+        ->middleware('throttle:register')
+        ->name('v1.auth.register');
+    Route::post('/login', 'login')
+        ->middleware('throttle:login')
+        ->name('v1.auth.login');
+    Route::post('/forgot-password', 'forgotPassword')
+        ->middleware('throttle:forgot-password')
+        ->name('v1.auth.forgot-password');
+    Route::post('/reset-password', 'resetPassword')
+        ->middleware('throttle:reset-password')
+        ->name('v1.auth.reset-password');
+});
 
 Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('v1.auth.logout');
-    Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('v1.auth.logout-all');
-    Route::post('/refresh-token', [AuthController::class, 'refreshToken'])->name('v1.auth.refresh-token');
+    // Protected auth routes
+    Route::controller(AuthController::class)->group(function () {
+        Route::post('/logout', 'logout')->name('v1.auth.logout');
+        Route::post('/logout-all', 'logoutAll')->name('v1.auth.logout-all');
+        Route::post('/refresh-token', 'refreshToken')->name('v1.auth.refresh-token');
+    });
 
-    Route::post('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-        ->middleware(['signed', 'throttle:verify-email'])
-        ->name('v1.verification.verify');
-    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:resend-verification')->name('v1.verification.resend');
+    // Email verification routes
+    Route::prefix('email')->name('v1.verification.')->controller(EmailVerificationController::class)->group(function () {
+        Route::post('/verify/{id}/{hash}', 'verify')
+            ->middleware(['signed', 'throttle:verify-email'])
+            ->name('verify');
+        Route::post('/resend', 'resend')
+            ->middleware('throttle:resend-verification')
+            ->name('resend');
+    });
 
-    Route::get('/users', [UserController::class, 'index'])
-        ->middleware('verified')
-        ->name('v1.users.index');
+    // User routes
+    Route::controller(UserController::class)->group(function () {
+        Route::get('/users', 'index')
+            ->middleware('verified')
+            ->name('v1.users.index');
+    });
 
-    Route::get('/me', [ProfileController::class, 'show'])->name('v1.profile.show');
-    Route::put('/me', [ProfileController::class, 'update'])->name('v1.profile.update');
-    Route::delete('/me', [ProfileController::class, 'destroy'])->middleware('throttle:delete-account')->name('v1.profile.destroy');
-    Route::post('/me/avatar', [ProfileController::class, 'updateAvatar'])->middleware('throttle:avatar-upload')->name('v1.profile.avatar.update');
-    Route::delete('/me/avatar', [ProfileController::class, 'deleteAvatar'])->name('v1.profile.avatar.delete');
-    Route::put('/me/password', [ProfileController::class, 'changePassword'])->name('v1.profile.password');
+    // Profile routes
+    Route::prefix('me')->name('v1.profile.')->controller(ProfileController::class)->group(function () {
+        Route::get('/', 'show')->name('show');
+        Route::put('/', 'update')->name('update');
+        Route::delete('/', 'destroy')
+            ->middleware('throttle:delete-account')
+            ->name('destroy');
+        Route::post('/avatar', 'updateAvatar')
+            ->middleware('throttle:avatar-upload')
+            ->name('avatar.update');
+        Route::delete('/avatar', 'deleteAvatar')->name('avatar.delete');
+        Route::put('/password', 'changePassword')->name('password');
+    });
 });
