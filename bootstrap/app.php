@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\ApiLogMiddleware;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\ForceJsonResponse;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -9,8 +10,11 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->api(prepend: [
+            ForceJsonResponse::class,
+        ]);
         $middleware->throttleApi('api');
         $middleware->alias([
             'user.active' => EnsureUserIsActive::class,
@@ -34,6 +41,40 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(function (Request $request) {
             return $request->is('api/*') || $request->expectsJson();
+        });
+
+        $exceptions->render(function (TooManyRequestsHttpException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                Log::channel('apilog')->warning('Too many requests', [
+                    'url'     => $request->fullUrl(),
+                    'method'  => $request->method(),
+                    'ip'      => $request->ip(),
+                    'user_id' => $request->user()?->id,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Too many requests. Please try again later.',
+                ], 429)->withHeaders([
+                    'Retry-After' => $e->getHeaders()['Retry-After'] ?? 60,
+                ]);
+            }
+        });
+
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                Log::channel('apilog')->warning('Forbidden', [
+                    'url'     => $request->fullUrl(),
+                    'method'  => $request->method(),
+                    'ip'      => $request->ip(),
+                    'user_id' => $request->user()?->id,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Forbidden.',
+                ], 403);
+            }
         });
 
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
@@ -99,6 +140,40 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'Validation failed.',
                     'errors' => $e->errors(),
                 ], 422);
+            }
+        });
+
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                Log::channel('apilog')->warning('HTTP Exception', [
+                    'url'         => $request->fullUrl(),
+                    'method'      => $request->method(),
+                    'ip'          => $request->ip(),
+                    'user_id'     => $request->user()?->id,
+                    'status_code' => $e->getStatusCode(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage() ?: 'An error occurred.',
+                ], $e->getStatusCode());
+            }
+        });
+
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                Log::channel('apilog')->error('Server Error', [
+                    'url'       => $request->fullUrl(),
+                    'method'    => $request->method(),
+                    'ip'        => $request->ip(),
+                    'user_id'   => $request->user()?->id,
+                    'exception' => $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => config('app.debug') ? $e->getMessage() : 'Internal server error.',
+                ], 500);
             }
         });
     })->create();
