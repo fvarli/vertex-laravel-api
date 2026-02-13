@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\V1\EmailVerification;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\URL;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -16,9 +17,12 @@ class VerifyEmailTest extends TestCase
         $user = User::factory()->unverified()->create();
         Sanctum::actingAs($user);
 
-        $hash = sha1($user->getEmailForVerification());
+        $url = URL::temporarySignedRoute('v1.verification.verify', now()->addMinutes(60), [
+            'id' => $user->id,
+            'hash' => sha1($user->getEmailForVerification()),
+        ]);
 
-        $response = $this->postJson("/api/v1/email/verify/{$user->id}/{$hash}");
+        $response = $this->postJson($url);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -34,7 +38,12 @@ class VerifyEmailTest extends TestCase
         $user = User::factory()->unverified()->create();
         Sanctum::actingAs($user);
 
-        $response = $this->postJson("/api/v1/email/verify/{$user->id}/invalid-hash");
+        $url = URL::temporarySignedRoute('v1.verification.verify', now()->addMinutes(60), [
+            'id' => $user->id,
+            'hash' => 'invalid-hash',
+        ]);
+
+        $response = $this->postJson($url);
 
         $response->assertStatus(400)
             ->assertJson([
@@ -50,14 +59,32 @@ class VerifyEmailTest extends TestCase
         $user = User::factory()->create(); // already verified by default
         Sanctum::actingAs($user);
 
-        $hash = sha1($user->getEmailForVerification());
+        $url = URL::temporarySignedRoute('v1.verification.verify', now()->addMinutes(60), [
+            'id' => $user->id,
+            'hash' => sha1($user->getEmailForVerification()),
+        ]);
 
-        $response = $this->postJson("/api/v1/email/verify/{$user->id}/{$hash}");
+        $response = $this->postJson($url);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'message' => 'Email is already verified.',
+            ]);
+    }
+
+    public function test_verify_fails_without_valid_signature(): void
+    {
+        $user = User::factory()->unverified()->create();
+        Sanctum::actingAs($user);
+
+        $hash = sha1($user->getEmailForVerification());
+
+        $response = $this->postJson("/api/v1/email/verify/{$user->id}/{$hash}");
+
+        $response->assertStatus(403)
+            ->assertJson([
+                'success' => false,
             ]);
     }
 }

@@ -19,7 +19,9 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
     Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('v1.auth.logout-all');
     Route::post('/refresh-token', [AuthController::class, 'refreshToken'])->name('v1.auth.refresh-token');
 
-    Route::post('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('v1.verification.verify');
+    Route::post('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware('signed')
+        ->name('v1.verification.verify');
     Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->name('v1.verification.resend');
 
     Route::get('/users', [UserController::class, 'index'])
