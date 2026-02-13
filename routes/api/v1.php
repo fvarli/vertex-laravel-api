@@ -30,8 +30,8 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
 
     Route::get('/me', [ProfileController::class, 'show'])->name('v1.profile.show');
     Route::put('/me', [ProfileController::class, 'update'])->name('v1.profile.update');
-    Route::delete('/me', [ProfileController::class, 'destroy'])->name('v1.profile.destroy');
-    Route::post('/me/avatar', [ProfileController::class, 'updateAvatar'])->name('v1.profile.avatar.update');
+    Route::delete('/me', [ProfileController::class, 'destroy'])->middleware('throttle:delete-account')->name('v1.profile.destroy');
+    Route::post('/me/avatar', [ProfileController::class, 'updateAvatar'])->middleware('throttle:avatar-upload')->name('v1.profile.avatar.update');
     Route::delete('/me/avatar', [ProfileController::class, 'deleteAvatar'])->name('v1.profile.avatar.delete');
     Route::put('/me/password', [ProfileController::class, 'changePassword'])->name('v1.profile.password');
 });
