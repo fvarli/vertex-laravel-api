@@ -24,12 +24,12 @@ return [
         /*
          * API version.
          */
-        'version' => env('API_VERSION', '0.0.1'),
+        'version' => env('API_VERSION', '1.0.0'),
 
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => '',
+        'description' => 'Vertex API v1 includes auth, profile, email verification, health, and rate-limited security-sensitive endpoints.',
     ],
 
     /*
@@ -39,7 +39,7 @@ return [
         /*
          * Define the title of the documentation's website. App name is used when this config is `null`.
          */
-        'title' => null,
+        'title' => 'Vertex Laravel API Docs',
 
         /*
          * Define the theme of the documentation. Available options are `light`, `dark`, and `system`.
