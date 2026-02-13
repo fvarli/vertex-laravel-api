@@ -1,18 +1,25 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\EmailVerificationController;
+use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/health', fn () => response()->json(['status' => 'ok', 'version' => 'v1']))
-    ->name('v1.health');
+Route::get('/health', HealthController::class)->name('v1.health');
 
-Route::post('/register', [AuthController::class, 'register'])->name('v1.auth.register');
-Route::post('/login', [AuthController::class, 'login'])->name('v1.auth.login');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register')->name('v1.auth.register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('v1.auth.login');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:forgot-password')->name('v1.auth.forgot-password');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('v1.auth.reset-password');
 
 Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('v1.auth.logout');
     Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('v1.auth.logout-all');
+    Route::post('/refresh-token', [AuthController::class, 'refreshToken'])->name('v1.auth.refresh-token');
+
+    Route::post('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('v1.verification.verify');
+    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->name('v1.verification.resend');
 
     Route::get('/me', [ProfileController::class, 'show'])->name('v1.profile.show');
     Route::put('/me', [ProfileController::class, 'update'])->name('v1.profile.update');

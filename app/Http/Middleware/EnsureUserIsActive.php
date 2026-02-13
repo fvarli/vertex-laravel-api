@@ -15,7 +15,7 @@ class EnsureUserIsActive
 
             return response()->json([
                 'success' => false,
-                'message' => 'Your account has been deactivated.',
+                'message' => __('api.auth.account_deactivated'),
             ], 403);
         }
 

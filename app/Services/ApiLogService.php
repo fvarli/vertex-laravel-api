@@ -19,6 +19,7 @@ class ApiLogService
     private function buildContext(Request $request, array $extra = []): array
     {
         return array_merge([
+            'request_id' => $request->attributes->get('request_id'),
             'ip'         => $request->ip(),
             'method'     => $request->method(),
             'url'        => $request->fullUrl(),

@@ -4,7 +4,11 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class AuthService
 {
@@ -30,14 +34,14 @@ class AuthService
     public function login(array $credentials): array
     {
         if (! Auth::attempt($credentials)) {
-            throw new AuthenticationException('Invalid credentials.');
+            throw new AuthenticationException(__('api.auth.login_failed'));
         }
 
         $user = Auth::user();
 
         if (! $user->is_active) {
             Auth::guard('web')->logout();
-            throw new AuthenticationException('Your account has been deactivated.');
+            throw new AuthenticationException(__('api.auth.account_deactivated'));
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -53,5 +57,31 @@ class AuthService
     public function logoutAll(User $user): void
     {
         $user->tokens()->delete();
+    }
+
+    public function sendResetLink(string $email): string
+    {
+        return Password::sendResetLink(['email' => $email]);
+    }
+
+    public function resetPassword(array $data): string
+    {
+        return Password::reset($data, function (User $user, string $password) {
+            $user->forceFill([
+                'password' => Hash::make($password),
+                'remember_token' => Str::random(60),
+            ])->save();
+
+            $user->tokens()->delete();
+
+            event(new PasswordReset($user));
+        });
+    }
+
+    public function refreshToken(User $user): string
+    {
+        $user->currentAccessToken()->delete();
+
+        return $user->createToken('auth_token')->plainTextToken;
     }
 }

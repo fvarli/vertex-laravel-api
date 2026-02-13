@@ -3,6 +3,9 @@
 use App\Http\Middleware\ApiLogMiddleware;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ForceJsonResponse;
+use App\Http\Middleware\RequestIdMiddleware;
+use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Http\Middleware\SetLocaleMiddleware;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -25,7 +28,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [
+            RequestIdMiddleware::class,
             ForceJsonResponse::class,
+        ], append: [
+            SecurityHeadersMiddleware::class,
+            SetLocaleMiddleware::class,
         ]);
         $middleware->throttleApi('api');
         $middleware->alias([
@@ -43,8 +50,17 @@ return Application::configure(basePath: dirname(__DIR__))
             return $request->is('api/*') || $request->expectsJson();
         });
 
-        $exceptions->render(function (TooManyRequestsHttpException $e, Request $request) {
+        $resolveLocale = function (Request $request): void {
+            $locale = strtolower(substr($request->header('Accept-Language', 'en'), 0, 2));
+            if (! in_array($locale, ['en', 'tr'], true)) {
+                $locale = 'en';
+            }
+            app()->setLocale($locale);
+        };
+
+        $exceptions->render(function (TooManyRequestsHttpException $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                $resolveLocale($request);
                 Log::channel('apilog')->warning('Too many requests', [
                     'url'     => $request->fullUrl(),
                     'method'  => $request->method(),
@@ -54,15 +70,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Too many requests. Please try again later.',
+                    'message' => __('api.too_many_requests'),
                 ], 429)->withHeaders([
                     'Retry-After' => $e->getHeaders()['Retry-After'] ?? 60,
                 ]);
             }
         });
 
-        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                $resolveLocale($request);
                 Log::channel('apilog')->warning('Forbidden', [
                     'url'     => $request->fullUrl(),
                     'method'  => $request->method(),
@@ -72,13 +89,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Forbidden.',
+                    'message' => __('api.forbidden'),
                 ], 403);
             }
         });
 
-        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                $resolveLocale($request);
                 Log::channel('apilog')->warning('Resource not found', [
                     'url'     => $request->fullUrl(),
                     'method'  => $request->method(),
@@ -88,13 +106,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Resource not found.',
+                    'message' => __('api.not_found'),
                 ], 404);
             }
         });
 
-        $exceptions->render(function (MethodNotAllowedHttpException $e, Request $request) {
+        $exceptions->render(function (MethodNotAllowedHttpException $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                $resolveLocale($request);
                 Log::channel('apilog')->warning('Method not allowed', [
                     'url'     => $request->fullUrl(),
                     'method'  => $request->method(),
@@ -104,13 +123,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Method not allowed.',
+                    'message' => __('api.method_not_allowed'),
                 ], 405);
             }
         });
 
-        $exceptions->render(function (AuthenticationException $e, Request $request) {
+        $exceptions->render(function (AuthenticationException $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                $resolveLocale($request);
                 Log::channel('apilog')->warning('Unauthenticated', [
                     'url'     => $request->fullUrl(),
                     'method'  => $request->method(),
@@ -120,13 +140,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthenticated.',
+                    'message' => __('api.unauthenticated'),
                 ], 401);
             }
         });
 
-        $exceptions->render(function (ValidationException $e, Request $request) {
+        $exceptions->render(function (ValidationException $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                $resolveLocale($request);
                 Log::channel('apilog')->debug('Validation failed', [
                     'url'     => $request->fullUrl(),
                     'method'  => $request->method(),
@@ -137,14 +158,15 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validation failed.',
+                    'message' => __('api.validation_failed'),
                     'errors' => $e->errors(),
                 ], 422);
             }
         });
 
-        $exceptions->render(function (HttpException $e, Request $request) {
+        $exceptions->render(function (HttpException $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                $resolveLocale($request);
                 Log::channel('apilog')->warning('HTTP Exception', [
                     'url'         => $request->fullUrl(),
                     'method'      => $request->method(),
@@ -160,8 +182,9 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        $exceptions->render(function (Throwable $e, Request $request) {
+        $exceptions->render(function (Throwable $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
+                $resolveLocale($request);
                 Log::channel('apilog')->error('Server Error', [
                     'url'       => $request->fullUrl(),
                     'method'    => $request->method(),
@@ -172,7 +195,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json([
                     'success' => false,
-                    'message' => config('app.debug') ? $e->getMessage() : 'Internal server error.',
+                    'message' => config('app.debug') ? $e->getMessage() : __('api.server_error'),
                 ], 500);
             }
         });

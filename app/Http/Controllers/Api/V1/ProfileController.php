@@ -31,7 +31,7 @@ class ProfileController extends BaseController
             'fields_updated' => array_keys($request->validated()),
         ]);
 
-        return $this->sendResponse(new UserResource($user), 'Profile updated successfully.');
+        return $this->sendResponse(new UserResource($user), __('api.profile.updated'));
     }
 
     public function changePassword(ChangePasswordRequest $request): JsonResponse
@@ -40,6 +40,6 @@ class ProfileController extends BaseController
 
         $this->apiLogService->info('Password changed', $request);
 
-        return $this->sendResponse([], 'Password changed successfully.');
+        return $this->sendResponse([], __('api.profile.password_changed'));
     }
 }
