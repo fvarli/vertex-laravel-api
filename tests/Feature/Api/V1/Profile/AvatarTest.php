@@ -40,6 +40,7 @@ class AvatarTest extends TestCase
 
         $user->refresh();
         $this->assertNotNull($user->avatar);
+        $this->assertStringStartsWith('avatars/', $user->avatar);
         Storage::disk('public')->assertExists($user->avatar);
     }
 
@@ -60,6 +61,8 @@ class AvatarTest extends TestCase
         $user->refresh();
         Storage::disk('public')->assertMissing($oldPath);
         Storage::disk('public')->assertExists($user->avatar);
+        $this->assertNotNull($user->avatar);
+        $this->assertStringStartsWith('avatars/', $user->avatar);
         $this->assertNotEquals($oldPath, $user->avatar);
     }
 

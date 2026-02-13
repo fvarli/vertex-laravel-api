@@ -81,4 +81,43 @@ class ResetPasswordTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['email', 'token', 'password']);
     }
+
+    public function test_validation_fails_with_invalid_email_format(): void
+    {
+        $response = $this->postJson($this->endpoint, [
+            'email' => 'invalid-email',
+            'token' => 'token',
+            'password' => 'newpassword123',
+            'password_confirmation' => 'newpassword123',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
+    }
+
+    public function test_validation_fails_with_weak_password(): void
+    {
+        $response = $this->postJson($this->endpoint, [
+            'email' => 'john@example.com',
+            'token' => 'token',
+            'password' => 'short',
+            'password_confirmation' => 'short',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['password']);
+    }
+
+    public function test_validation_fails_when_password_confirmation_does_not_match(): void
+    {
+        $response = $this->postJson($this->endpoint, [
+            'email' => 'john@example.com',
+            'token' => 'token',
+            'password' => 'newpassword123',
+            'password_confirmation' => 'mismatch-password',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['password']);
+    }
 }

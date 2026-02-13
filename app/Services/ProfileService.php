@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class ProfileService
 {
@@ -22,14 +23,20 @@ class ProfileService
 
     public function updateAvatar(User $user, UploadedFile $file): User
     {
-        if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
+        $disk = Storage::disk('public');
+        $oldAvatar = $user->avatar;
+        $path = $file->store('avatars', 'public');
+
+        try {
+            $user->update(['avatar' => $path]);
+        } catch (Throwable $e) {
+            $disk->delete($path);
+            throw $e;
         }
 
-        $filename = $user->id . '_' . md5(uniqid()) . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs('avatars', $filename, 'public');
-
-        $user->update(['avatar' => $path]);
+        if ($oldAvatar && $oldAvatar !== $path) {
+            $disk->delete($oldAvatar);
+        }
 
         return $user->refresh();
     }
