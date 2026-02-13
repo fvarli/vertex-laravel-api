@@ -44,6 +44,9 @@ return [
     'profile' => [
         'updated'          => 'Profil başarıyla güncellendi.',
         'password_changed' => 'Şifre başarıyla değiştirildi.',
+        'account_deleted'  => 'Hesap başarıyla silindi.',
+        'avatar_uploaded'  => 'Avatar başarıyla yüklendi.',
+        'avatar_deleted'   => 'Avatar başarıyla silindi.',
     ],
 
     // Sağlık

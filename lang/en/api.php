@@ -44,6 +44,9 @@ return [
     'profile' => [
         'updated'          => 'Profile updated successfully.',
         'password_changed' => 'Password changed successfully.',
+        'account_deleted'  => 'Account deleted successfully.',
+        'avatar_uploaded'  => 'Avatar uploaded successfully.',
+        'avatar_deleted'   => 'Avatar deleted successfully.',
     ],
 
     // Health
