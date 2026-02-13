@@ -115,4 +115,16 @@ class UserListTest extends TestCase
         $response->assertStatus(401)
             ->assertJson(['success' => false]);
     }
+
+    public function test_unverified_user_cannot_list_users(): void
+    {
+        User::factory()->count(3)->create();
+        $user = User::factory()->unverified()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson($this->endpoint);
+
+        $response->assertStatus(403)
+            ->assertJson(['success' => false]);
+    }
 }

@@ -22,7 +22,9 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
     Route::post('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('v1.verification.verify');
     Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->name('v1.verification.resend');
 
-    Route::get('/users', [UserController::class, 'index'])->name('v1.users.index');
+    Route::get('/users', [UserController::class, 'index'])
+        ->middleware('verified')
+        ->name('v1.users.index');
 
     Route::get('/me', [ProfileController::class, 'show'])->name('v1.profile.show');
     Route::put('/me', [ProfileController::class, 'update'])->name('v1.profile.update');
