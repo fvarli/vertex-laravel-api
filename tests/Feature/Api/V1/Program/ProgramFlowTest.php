@@ -55,4 +55,69 @@ class ProgramFlowTest extends TestCase
             ->assertJsonPath('success', false)
             ->assertJsonValidationErrors(['status']);
     }
+
+    public function test_cannot_create_program_with_duplicate_day_and_order_items(): void
+    {
+        $trainer = User::factory()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => $trainer->id]);
+        $workspace->users()->attach($trainer->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $trainer->update(['active_workspace_id' => $workspace->id]);
+
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainer->id,
+        ]);
+
+        Sanctum::actingAs($trainer);
+
+        $response = $this->postJson("/api/v1/students/{$student->id}/programs", [
+            'title' => 'Week Plan',
+            'week_start_date' => '2026-02-16',
+            'status' => Program::STATUS_DRAFT,
+            'items' => [
+                [
+                    'day_of_week' => 1,
+                    'order_no' => 1,
+                    'exercise' => 'Squat',
+                ],
+                [
+                    'day_of_week' => 1,
+                    'order_no' => 1,
+                    'exercise' => 'Bench Press',
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonValidationErrors(['items.1.order_no']);
+    }
+
+    public function test_trainer_cannot_create_program_for_another_trainers_student(): void
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $trainerA = User::factory()->trainer()->create();
+        $trainerB = User::factory()->trainer()->create();
+
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $workspace->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $workspace->users()->attach($trainerA->id, ['role' => 'trainer', 'is_active' => true]);
+        $workspace->users()->attach($trainerB->id, ['role' => 'trainer', 'is_active' => true]);
+        $trainerA->update(['active_workspace_id' => $workspace->id]);
+
+        $studentForTrainerB = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainerB->id,
+        ]);
+
+        Sanctum::actingAs($trainerA);
+
+        $response = $this->postJson("/api/v1/students/{$studentForTrainerB->id}/programs", [
+            'title' => 'Unauthorized Plan',
+            'week_start_date' => '2026-02-16',
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false);
+    }
 }

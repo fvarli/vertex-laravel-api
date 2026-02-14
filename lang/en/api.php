@@ -76,6 +76,7 @@ return [
         'updated' => 'Program updated successfully.',
         'status_updated' => 'Program status updated successfully.',
         'active_exists_for_week' => 'An active program already exists for this student and week.',
+        'duplicate_day_order' => 'Program items cannot share the same day_of_week and order_no.',
     ],
 
     // Appointment

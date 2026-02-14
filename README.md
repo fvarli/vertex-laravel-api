@@ -226,6 +226,7 @@ Authenticated (workspace/domain):
 
 - Student status lifecycle: `active` or `passive`.
 - Program guard: one `active` program per student per `week_start_date`.
+- Program item guard: `day_of_week + order_no` must be unique inside a program payload.
 - Appointment guard: trainer and student overlap is blocked (`422 Unprocessable Entity`, `errors.code[0] = time_slot_conflict`).
 - WhatsApp link endpoint returns ready-to-open `wa.me` URL.
 

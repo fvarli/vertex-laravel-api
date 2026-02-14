@@ -30,4 +30,34 @@ class StoreProgramRequest extends FormRequest
             'items.*.notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $items = $this->input('items', []);
+
+            if (! is_array($items)) {
+                return;
+            }
+
+            $seen = [];
+
+            foreach ($items as $index => $item) {
+                $day = $item['day_of_week'] ?? null;
+                $order = $item['order_no'] ?? null;
+
+                if (! is_numeric($day) || ! is_numeric($order)) {
+                    continue;
+                }
+
+                $key = sprintf('%d-%d', (int) $day, (int) $order);
+
+                if (isset($seen[$key])) {
+                    $validator->errors()->add("items.$index.order_no", __('api.program.duplicate_day_order'));
+                }
+
+                $seen[$key] = true;
+            }
+        });
+    }
 }

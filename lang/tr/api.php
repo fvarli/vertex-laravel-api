@@ -76,6 +76,7 @@ return [
         'updated' => 'Program başarıyla güncellendi.',
         'status_updated' => 'Program durumu başarıyla güncellendi.',
         'active_exists_for_week' => 'Bu öğrenci ve hafta için zaten aktif bir program var.',
+        'duplicate_day_order' => 'Program öğeleri aynı day_of_week ve order_no değerini paylaşamaz.',
     ],
 
     // Appointment
