@@ -56,6 +56,8 @@ return [
 
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
 
+    'api_strict_json_only' => (bool) env('API_STRICT_JSON_ONLY', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -46,6 +46,14 @@ php artisan test
 ./vendor/bin/pint --test
 ```
 
+## API-only Mode
+
+- Web routes are intentionally locked down.
+- `GET /` returns `403` JSON.
+- Non-API web paths also return `403` JSON.
+- Optional strict mode:
+  - Set `API_STRICT_JSON_ONLY=true` to reject API requests that do not expect JSON.
+
 ## Authentication
 
 Protected routes use Sanctum bearer tokens.

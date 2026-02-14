@@ -10,10 +10,14 @@ class ExampleTest extends TestCase
     /**
      * A basic test example.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_the_application_blocks_web_root_access(): void
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'message' => 'This is an API-only application. No web access allowed.',
+            ]);
     }
 }
