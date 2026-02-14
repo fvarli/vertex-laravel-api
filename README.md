@@ -61,7 +61,17 @@ Protected routes use Sanctum bearer tokens.
 
 `Authorization: Bearer <token>`
 
-## Request ID Contract
+## Security Model
+
+### Token Lifecycle
+
+- Register/login create a new Sanctum token.
+- `POST /api/v1/refresh-token` revokes current token and issues a new one.
+- `PUT /api/v1/me/password` keeps current token active and revokes other tokens.
+- `POST /api/v1/reset-password` revokes all user tokens after successful reset.
+- `DELETE /api/v1/me` revokes all tokens and soft-deletes the account.
+
+### Request ID Contract
 
 - Client can send `X-Request-Id`.
 - Valid IDs are echoed back in response header `X-Request-Id`.
@@ -69,6 +79,18 @@ Protected routes use Sanctum bearer tokens.
 - Validation rules:
   - max length: `128`
   - allowed chars: `A-Z a-z 0-9 . _ : -`
+
+### Exception Handling
+
+- API errors are rendered as JSON with consistent envelope shape.
+- Common HTTP statuses are explicitly handled: `401`, `403`, `404`, `405`, `422`, `429`, `500`.
+- In production (`APP_DEBUG=false`), server errors return generic messages (no internal exception leakage).
+
+### API Log Masking
+
+- API traffic is logged via dedicated `apilog` channel.
+- Sensitive keys such as password/token/authorization secrets are masked.
+- Email and phone values are partially masked before log write.
 
 ## Main Endpoints
 
@@ -197,6 +219,23 @@ API responses include:
 - `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none';`
 - `Strict-Transport-Security` in non-debug mode only
 
+## Operational Defaults
+
+- Time handling is UTC-first:
+  - app timezone default is `UTC`
+  - database connection timezone is set to `UTC` where supported
+- Localization is header-driven:
+  - `Accept-Language` supports `en` and `tr`
+  - unsupported locales fall back to `en`
+- API-only access policy:
+  - web root and non-API web routes return `403` JSON
+  - optional strict JSON gate with `API_STRICT_JSON_ONLY=true`
+- Avatar upload policy:
+  - allowed types: `jpeg`, `jpg`, `png`, `webp`
+  - max file size: `2MB`
+  - max dimensions: `4096x4096`
+  - replacing avatar removes previous file from storage
+
 ## Running Tests
 
 ```bash
@@ -204,6 +243,17 @@ php artisan test
 ```
 
 Current baseline: `103` tests passing (`401` assertions).
+
+## Developer Confidence
+
+- Feature coverage includes:
+  - authentication and token flows
+  - profile, avatar, and account deletion flows
+  - email verification and resend flows
+  - middleware behavior (request-id, locale, security headers, forced-json)
+  - rate-limit enforcement
+  - API exception handling responses
+- Unit coverage includes API log masking logic.
 
 ## CI Pipeline
 
