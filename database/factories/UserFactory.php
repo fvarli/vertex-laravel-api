@@ -55,4 +55,31 @@ class UserFactory extends Factory
             'is_active' => false,
         ]);
     }
+
+    /**
+     * Indicate that the user should be an active and verified account.
+     */
+    public function verifiedActive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+    }
+
+    /**
+     * Semantic state for trainer accounts.
+     */
+    public function trainer(): static
+    {
+        return $this->verifiedActive();
+    }
+
+    /**
+     * Semantic state for owner/admin accounts.
+     */
+    public function ownerAdmin(): static
+    {
+        return $this->verifiedActive();
+    }
 }

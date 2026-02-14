@@ -36,11 +36,33 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 composer install
 cp .env.example .env
 php artisan key:generate
-php artisan migrate
+php artisan migrate:fresh --seed
 php artisan serve
 ```
 
 API base path: `/api/v1`
+
+## Demo Seed Data
+
+Run seeders for a ready-to-use owner/trainer demo graph:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+Demo login credentials:
+
+- Owner/Admin:
+  - email: `owner@vertex.local`
+  - password: `password123`
+- Trainer:
+  - email: `trainer@vertex.local`
+  - password: `password123`
+
+Both users are seeded with:
+- active workspace membership (`Vertex Demo Workspace`)
+- `active_workspace_id` set
+- sample students, programs (with items), and appointments
 
 ## Local Development Checklist
 
