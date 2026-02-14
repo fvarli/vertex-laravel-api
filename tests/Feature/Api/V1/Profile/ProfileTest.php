@@ -173,4 +173,25 @@ class ProfileTest extends TestCase
                 'message' => 'Your account has been deactivated.',
             ]);
     }
+
+    public function test_change_password_revokes_other_tokens_but_keeps_current_token(): void
+    {
+        $user = User::factory()->create();
+        $tokenA = $user->createToken('token-a');
+        $tokenB = $user->createToken('token-b');
+
+        $this->withToken($tokenA->plainTextToken)
+            ->putJson($this->passwordEndpoint, [
+                'current_password' => 'password',
+                'password' => 'newpassword123',
+                'password_confirmation' => 'newpassword123',
+            ])
+            ->assertStatus(200);
+
+        $this->assertCount(1, $user->fresh()->tokens);
+        $this->assertDatabaseHas('personal_access_tokens', ['id' => $tokenA->accessToken->id]);
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $tokenB->accessToken->id]);
+
+        $this->assertSame($tokenA->accessToken->id, $user->fresh()->tokens->first()->id);
+    }
 }

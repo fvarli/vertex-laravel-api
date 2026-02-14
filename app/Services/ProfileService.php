@@ -19,6 +19,16 @@ class ProfileService
     public function changePassword(User $user, string $password): void
     {
         $user->update(['password' => $password]);
+
+        $currentTokenId = $user->currentAccessToken()?->id;
+
+        if ($currentTokenId) {
+            $user->tokens()->whereKeyNot($currentTokenId)->delete();
+
+            return;
+        }
+
+        $user->tokens()->delete();
     }
 
     public function updateAvatar(User $user, UploadedFile $file): User

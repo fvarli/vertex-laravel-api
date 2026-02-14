@@ -37,7 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->throttleApi('api');
         $middleware->alias([
             'user.active' => EnsureUserIsActive::class,
-            'api.log'     => ApiLogMiddleware::class,
+            'api.log' => ApiLogMiddleware::class,
         ]);
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('api/*')) {
@@ -62,9 +62,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 $resolveLocale($request);
                 Log::channel('apilog')->warning('Too many requests', [
-                    'url'     => $request->fullUrl(),
-                    'method'  => $request->method(),
-                    'ip'      => $request->ip(),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'ip' => $request->ip(),
                     'user_id' => $request->user()?->id,
                 ]);
 
@@ -81,9 +81,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 $resolveLocale($request);
                 Log::channel('apilog')->warning('Forbidden', [
-                    'url'     => $request->fullUrl(),
-                    'method'  => $request->method(),
-                    'ip'      => $request->ip(),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'ip' => $request->ip(),
                     'user_id' => $request->user()?->id,
                 ]);
 
@@ -98,9 +98,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 $resolveLocale($request);
                 Log::channel('apilog')->warning('Resource not found', [
-                    'url'     => $request->fullUrl(),
-                    'method'  => $request->method(),
-                    'ip'      => $request->ip(),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'ip' => $request->ip(),
                     'user_id' => $request->user()?->id,
                 ]);
 
@@ -115,9 +115,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 $resolveLocale($request);
                 Log::channel('apilog')->warning('Method not allowed', [
-                    'url'     => $request->fullUrl(),
-                    'method'  => $request->method(),
-                    'ip'      => $request->ip(),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'ip' => $request->ip(),
                     'user_id' => $request->user()?->id,
                 ]);
 
@@ -132,9 +132,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 $resolveLocale($request);
                 Log::channel('apilog')->warning('Unauthenticated', [
-                    'url'     => $request->fullUrl(),
-                    'method'  => $request->method(),
-                    'ip'      => $request->ip(),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'ip' => $request->ip(),
                     'user_id' => $request->user()?->id,
                 ]);
 
@@ -149,11 +149,11 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 $resolveLocale($request);
                 Log::channel('apilog')->debug('Validation failed', [
-                    'url'     => $request->fullUrl(),
-                    'method'  => $request->method(),
-                    'ip'      => $request->ip(),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'ip' => $request->ip(),
                     'user_id' => $request->user()?->id,
-                    'errors'  => $e->errors(),
+                    'errors' => $e->errors(),
                 ]);
 
                 return response()->json([
@@ -167,18 +167,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (HttpException $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 $resolveLocale($request);
+                $statusCode = $e->getStatusCode();
                 Log::channel('apilog')->warning('HTTP Exception', [
-                    'url'         => $request->fullUrl(),
-                    'method'      => $request->method(),
-                    'ip'          => $request->ip(),
-                    'user_id'     => $request->user()?->id,
-                    'status_code' => $e->getStatusCode(),
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'ip' => $request->ip(),
+                    'user_id' => $request->user()?->id,
+                    'status_code' => $statusCode,
                 ]);
 
                 return response()->json([
                     'success' => false,
-                    'message' => $e->getMessage() ?: 'An error occurred.',
-                ], $e->getStatusCode());
+                    'message' => $statusCode >= 500 ? __('api.server_error') : __('api.error'),
+                ], $statusCode);
             }
         });
 
@@ -186,10 +187,10 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*') || $request->expectsJson()) {
                 $resolveLocale($request);
                 Log::channel('apilog')->error('Server Error', [
-                    'url'       => $request->fullUrl(),
-                    'method'    => $request->method(),
-                    'ip'        => $request->ip(),
-                    'user_id'   => $request->user()?->id,
+                    'url' => $request->fullUrl(),
+                    'method' => $request->method(),
+                    'ip' => $request->ip(),
+                    'user_id' => $request->user()?->id,
                     'exception' => $e->getMessage(),
                 ]);
 

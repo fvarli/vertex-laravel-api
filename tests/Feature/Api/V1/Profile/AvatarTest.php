@@ -130,4 +130,19 @@ class AvatarTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['avatar']);
     }
+
+    public function test_upload_fails_with_excessive_dimensions(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $file = UploadedFile::fake()->image('huge.jpg', 5000, 5000)->size(1024);
+
+        $response = $this->postJson($this->avatarEndpoint, [
+            'avatar' => $file,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['avatar']);
+    }
 }

@@ -31,4 +31,20 @@ class RequestIdTest extends TestCase
         $response->assertStatus(200);
         $response->assertHeader('X-Request-Id', $clientId);
     }
+
+    public function test_generates_uuid_when_client_request_id_is_invalid(): void
+    {
+        $response = $this->getJson('/api/v1/health', [
+            'X-Request-Id' => 'invalid request id with spaces',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertHeader('X-Request-Id');
+
+        $requestId = $response->headers->get('X-Request-Id');
+        $this->assertMatchesRegularExpression(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/',
+            $requestId
+        );
+    }
 }

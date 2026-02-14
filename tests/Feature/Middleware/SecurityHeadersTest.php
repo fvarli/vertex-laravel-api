@@ -15,6 +15,10 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('X-Frame-Options', 'DENY');
         $response->assertHeader('X-XSS-Protection', '1; mode=block');
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        $response->assertHeader('Cross-Origin-Opener-Policy', 'same-origin');
+        $response->assertHeader('Cross-Origin-Resource-Policy', 'same-site');
+        $response->assertHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none';");
     }
 
     public function test_hsts_header_not_present_in_debug_mode(): void
