@@ -16,6 +16,7 @@ Repository status: active skeleton baseline for upcoming domain implementation.
 - Health endpoint with database/cache/queue checks
 - Localized responses: English and Turkish
 - Endpoint-specific rate limits for sensitive routes
+- CI quality gate: tests, code style, and dependency audit
 
 ## Requirements
 
@@ -52,13 +53,22 @@ php artisan test
 - `GET /` returns `403` JSON.
 - Non-API web paths also return `403` JSON.
 - Optional strict mode:
-  - Set `API_STRICT_JSON_ONLY=true` to reject API requests that do not expect JSON.
+  - Set `API_STRICT_JSON_ONLY=true` to reject API requests that do not expect JSON (`Accept: application/json` required).
 
 ## Authentication
 
 Protected routes use Sanctum bearer tokens.
 
 `Authorization: Bearer <token>`
+
+## Request ID Contract
+
+- Client can send `X-Request-Id`.
+- Valid IDs are echoed back in response header `X-Request-Id`.
+- If missing or invalid, server generates a UUID and returns it in `X-Request-Id`.
+- Validation rules:
+  - max length: `128`
+  - allowed chars: `A-Z a-z 0-9 . _ : -`
 
 ## Main Endpoints
 
@@ -104,6 +114,20 @@ Authenticated (`auth:sanctum`, `user.active`):
 | POST | `/api/v1/me/avatar` | Bearer token | `auth:sanctum,user.active,throttle:avatar-upload` | `v1.profile.avatar.update` |
 | DELETE | `/api/v1/me/avatar` | Bearer token | `auth:sanctum,user.active` | `v1.profile.avatar.delete` |
 | DELETE | `/api/v1/me` | Bearer token | `auth:sanctum,user.active,throttle:delete-account` | `v1.profile.destroy` |
+
+## Rate Limits
+
+| Limiter | Value | Scope Key |
+| --- | --- | --- |
+| `api` | `60/minute` | `user_id` or IP |
+| `login` | `5/minute` | IP |
+| `register` | `3/minute` | IP |
+| `forgot-password` | `3/minute` | IP |
+| `reset-password` | `5/minute` | `email+IP` |
+| `verify-email` | `6/minute` | `user_id` or IP |
+| `resend-verification` | `3/minute` | `user_id` or IP |
+| `avatar-upload` | `10/minute` | `user_id` or IP |
+| `delete-account` | `3/minute` | `user_id` or IP |
 
 ## Response Contract
 
@@ -153,13 +177,56 @@ If Scramble routes are enabled in your environment:
 - UI: `/docs/api`
 - OpenAPI JSON: `/api.json`
 
+If UI opens but `/api.json` returns `404`, check:
+- `APP_URL` matches the served host (example: `https://vertex.local`).
+- Local host mapping and TLS setup for that host are correct.
+- Docs route access middleware is not blocking JSON export in your environment.
+- Route/config cache is refreshed after env changes:
+  - `php artisan optimize:clear`
+
+## Security Headers
+
+API responses include:
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: geolocation=(), microphone=(), camera=()`
+- `Cross-Origin-Opener-Policy: same-origin`
+- `Cross-Origin-Resource-Policy: same-site`
+- `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none';`
+- `Strict-Transport-Security` in non-debug mode only
+
 ## Running Tests
 
 ```bash
 php artisan test
 ```
 
-Current baseline: `94` tests passing.
+Current baseline: `103` tests passing (`401` assertions).
+
+## CI Pipeline
+
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push/PR to `main`:
+- `php-tests` job:
+  - `composer install`
+  - `composer audit --locked --no-interaction`
+  - `php artisan test`
+- `code-style` job:
+  - `./vendor/bin/pint --test --dirty`
+
+## Keeping README Current
+
+Treat README as code. Update it in the same change set when any of these change:
+- API endpoints, route names, middleware, or auth rules
+- Response envelopes or error semantics
+- Rate limits or security headers
+- CI workflow behavior
+- Environment variables that affect API behavior (example: `API_STRICT_JSON_ONLY`)
+
+PR checklist (required):
+- [ ] Code changes reviewed for README impact
+- [ ] README updated or explicitly confirmed as still accurate
 
 ## Notes
 
