@@ -175,6 +175,7 @@ Authenticated (workspace/domain):
 - `GET /api/v1/appointments/{appointment}`
 - `PUT /api/v1/appointments/{appointment}`
 - `PATCH /api/v1/appointments/{appointment}/status`
+- `GET /api/v1/calendar`
 - `GET /api/v1/calendar/availability`
 - `GET /api/v1/students/{student}/whatsapp-link`
 
@@ -217,6 +218,7 @@ Authenticated (workspace/domain):
 | GET | `/api/v1/appointments/{appointment}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.show` |
 | PUT | `/api/v1/appointments/{appointment}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.update` |
 | PATCH | `/api/v1/appointments/{appointment}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.status` |
+| GET | `/api/v1/calendar` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.calendar.index` |
 | GET | `/api/v1/calendar/availability` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.calendar.availability` |
 | GET | `/api/v1/students/{student}/whatsapp-link` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.whatsapp.student-link` |
 
@@ -224,7 +226,7 @@ Authenticated (workspace/domain):
 
 - Student status lifecycle: `active` or `passive`.
 - Program guard: one `active` program per student per `week_start_date`.
-- Appointment guard: trainer and student overlap is blocked (`409 Conflict`).
+- Appointment guard: trainer and student overlap is blocked (`422 Unprocessable Entity`, `errors.code[0] = time_slot_conflict`).
 - WhatsApp link endpoint returns ready-to-open `wa.me` URL.
 
 ## Rate Limits
@@ -270,7 +272,10 @@ Conflict error envelope (appointment overlap):
 ```json
 {
   "success": false,
-  "message": "Appointment conflict detected for trainer or student."
+  "message": "Appointment conflict detected for trainer or student.",
+  "errors": {
+    "code": ["time_slot_conflict"]
+  }
 }
 ```
 
@@ -285,6 +290,26 @@ Paginated data envelope example:
     "current_page": 1,
     "per_page": 15,
     "total": 0
+  }
+}
+```
+
+Calendar availability envelope example:
+
+```json
+{
+  "success": true,
+  "message": "Success",
+  "data": {
+    "from": "2026-02-20 00:00:00",
+    "to": "2026-02-27 23:59:59",
+    "appointments": [],
+    "days": [
+      {
+        "date": "2026-02-21",
+        "items": []
+      }
+    ]
   }
 }
 ```

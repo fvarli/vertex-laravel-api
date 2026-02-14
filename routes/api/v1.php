@@ -106,6 +106,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             Route::put('/{appointment}', 'update')->name('update');
             Route::patch('/{appointment}/status', 'updateStatus')->name('status');
         });
+        Route::get('/calendar', [CalendarController::class, 'availability'])->name('v1.calendar.index');
         Route::get('/calendar/availability', [CalendarController::class, 'availability'])->name('v1.calendar.availability');
 
         // WhatsApp helper routes

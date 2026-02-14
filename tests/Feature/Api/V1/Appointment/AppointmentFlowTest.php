@@ -1,0 +1,133 @@
+<?php
+
+namespace Tests\Feature\Api\V1\Appointment;
+
+use App\Models\Appointment;
+use App\Models\Student;
+use App\Models\User;
+use App\Models\Workspace;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+class AppointmentFlowTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_index_supports_date_from_date_to_and_status_filters(): void
+    {
+        [$owner, $workspace] = $this->createOwnerWorkspaceContext();
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'phone' => '+905553333333',
+        ]);
+
+        Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'student_id' => $student->id,
+            'starts_at' => '2026-02-20 09:00:00',
+            'ends_at' => '2026-02-20 10:00:00',
+            'status' => Appointment::STATUS_DONE,
+        ]);
+
+        Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'student_id' => $student->id,
+            'starts_at' => '2026-02-21 09:00:00',
+            'ends_at' => '2026-02-21 10:00:00',
+            'status' => Appointment::STATUS_PLANNED,
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->getJson('/api/v1/appointments?date_from=2026-02-20 00:00:00&date_to=2026-02-20 23:59:59&status=done');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.status', Appointment::STATUS_DONE);
+    }
+
+    public function test_calendar_endpoint_returns_grouped_days_and_excludes_cancelled(): void
+    {
+        [$owner, $workspace] = $this->createOwnerWorkspaceContext();
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'phone' => '+905554444444',
+        ]);
+
+        Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'student_id' => $student->id,
+            'starts_at' => '2026-02-22 11:00:00',
+            'ends_at' => '2026-02-22 12:00:00',
+            'status' => Appointment::STATUS_PLANNED,
+        ]);
+
+        Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'student_id' => $student->id,
+            'starts_at' => '2026-02-22 13:00:00',
+            'ends_at' => '2026-02-22 14:00:00',
+            'status' => Appointment::STATUS_CANCELLED,
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->getJson('/api/v1/calendar?from=2026-02-22 00:00:00&to=2026-02-22 23:59:59');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonCount(1, 'data.appointments')
+            ->assertJsonCount(1, 'data.days')
+            ->assertJsonPath('data.days.0.date', '2026-02-22')
+            ->assertJsonCount(1, 'data.days.0.items');
+    }
+
+    public function test_trainer_cannot_create_appointment_for_another_trainers_student(): void
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $trainerA = User::factory()->trainer()->create();
+        $trainerB = User::factory()->trainer()->create();
+
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $workspace->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $workspace->users()->attach($trainerA->id, ['role' => 'trainer', 'is_active' => true]);
+        $workspace->users()->attach($trainerB->id, ['role' => 'trainer', 'is_active' => true]);
+        $trainerA->update(['active_workspace_id' => $workspace->id]);
+
+        $studentForTrainerB = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainerB->id,
+            'phone' => '+905555555555',
+        ]);
+
+        Sanctum::actingAs($trainerA);
+
+        $response = $this->postJson('/api/v1/appointments', [
+            'student_id' => $studentForTrainerB->id,
+            'starts_at' => '2026-02-23 10:00:00',
+            'ends_at' => '2026-02-23 11:00:00',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonValidationErrors(['student_id']);
+    }
+
+    private function createOwnerWorkspaceContext(): array
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $workspace->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $owner->update(['active_workspace_id' => $workspace->id]);
+
+        return [$owner, $workspace];
+    }
+}

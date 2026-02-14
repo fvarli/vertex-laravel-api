@@ -14,7 +14,7 @@ class AppointmentConflictTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_overlapping_appointment_returns_409(): void
+    public function test_overlapping_appointment_returns_422_with_conflict_code(): void
     {
         $trainer = User::factory()->create();
         $workspace = Workspace::factory()->create(['owner_user_id' => $trainer->id]);
@@ -50,7 +50,8 @@ class AppointmentConflictTest extends TestCase
             'ends_at' => '2026-02-20 11:30:00',
         ]);
 
-        $response->assertStatus(409)
-            ->assertJsonPath('success', false);
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('errors.code.0', 'time_slot_conflict');
     }
 }

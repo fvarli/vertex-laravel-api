@@ -4,15 +4,16 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Exceptions\AppointmentConflictException;
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Requests\Api\V1\Appointment\ListAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\StoreAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentStatusRequest;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
+use App\Models\Student;
 use App\Models\User;
 use App\Services\AppointmentService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends BaseController
@@ -22,21 +23,24 @@ class AppointmentController extends BaseController
     /**
      * List appointments in active workspace with date and status filters.
      */
-    public function index(Request $request): JsonResponse
+    public function index(ListAppointmentRequest $request): JsonResponse
     {
+        $validated = $request->validated();
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = $request->attributes->get('workspace_role');
         $user = $request->user();
-        $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
+        $perPage = (int) ($validated['per_page'] ?? 15);
+        $from = $validated['from'] ?? $validated['date_from'] ?? null;
+        $to = $validated['to'] ?? $validated['date_to'] ?? null;
 
         $appointments = Appointment::query()
             ->where('workspace_id', $workspaceId)
             ->when($workspaceRole !== 'owner_admin', fn ($q) => $q->where('trainer_user_id', $user->id))
-            ->when($request->query('from'), fn ($q, $from) => $q->where('starts_at', '>=', $from))
-            ->when($request->query('to'), fn ($q, $to) => $q->where('starts_at', '<=', $to))
-            ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
-            ->when($request->query('trainer_id'), fn ($q, $trainerId) => $q->where('trainer_user_id', $trainerId))
-            ->when($request->query('student_id'), fn ($q, $studentId) => $q->where('student_id', $studentId))
+            ->when($from, fn ($q, $fromValue) => $q->where('starts_at', '>=', $fromValue))
+            ->when($to, fn ($q, $toValue) => $q->where('starts_at', '<=', $toValue))
+            ->when(isset($validated['status']), fn ($q) => $q->where('status', $validated['status']))
+            ->when(isset($validated['trainer_id']), fn ($q) => $q->where('trainer_user_id', (int) $validated['trainer_id']))
+            ->when(isset($validated['student_id']), fn ($q) => $q->where('student_id', (int) $validated['student_id']))
             ->latest('starts_at')
             ->paginate($perPage);
 
@@ -71,6 +75,23 @@ class AppointmentController extends BaseController
             $trainerId = (int) $data['trainer_user_id'];
         }
 
+        $student = Student::query()
+            ->whereKey((int) $data['student_id'])
+            ->where('workspace_id', $workspaceId)
+            ->first();
+
+        if (! $student) {
+            throw ValidationException::withMessages([
+                'student_id' => [__('api.workspace.membership_required')],
+            ]);
+        }
+
+        if ($workspaceRole !== 'owner_admin' && (int) $student->trainer_user_id !== (int) $trainerId) {
+            throw ValidationException::withMessages([
+                'student_id' => [__('api.workspace.membership_required')],
+            ]);
+        }
+
         try {
             $appointment = $this->appointmentService->create(
                 workspaceId: $workspaceId,
@@ -79,7 +100,9 @@ class AppointmentController extends BaseController
                 data: $data,
             );
         } catch (AppointmentConflictException $e) {
-            return $this->sendError($e->getMessage(), [], 409);
+            return $this->sendError($e->getMessage(), [
+                'code' => ['time_slot_conflict'],
+            ], 422);
         }
 
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.created'), 201);
@@ -119,10 +142,34 @@ class AppointmentController extends BaseController
             }
         }
 
+        if (isset($data['student_id'])) {
+            $student = Student::query()
+                ->whereKey((int) $data['student_id'])
+                ->where('workspace_id', $appointment->workspace_id)
+                ->first();
+
+            if (! $student) {
+                throw ValidationException::withMessages([
+                    'student_id' => [__('api.workspace.membership_required')],
+                ]);
+            }
+
+            $workspaceRole = $request->attributes->get('workspace_role');
+            $trainerIdForAccess = (int) ($data['trainer_user_id'] ?? $appointment->trainer_user_id);
+
+            if ($workspaceRole !== 'owner_admin' && (int) $student->trainer_user_id !== $trainerIdForAccess) {
+                throw ValidationException::withMessages([
+                    'student_id' => [__('api.workspace.membership_required')],
+                ]);
+            }
+        }
+
         try {
             $appointment = $this->appointmentService->update($appointment, $data);
         } catch (AppointmentConflictException $e) {
-            return $this->sendError($e->getMessage(), [], 409);
+            return $this->sendError($e->getMessage(), [
+                'code' => ['time_slot_conflict'],
+            ], 422);
         }
 
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.updated'));

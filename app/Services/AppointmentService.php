@@ -72,7 +72,7 @@ class AppointmentService
     ): void {
         $query = Appointment::query()
             ->where('workspace_id', $workspaceId)
-            ->whereNotIn('status', [Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW])
+            ->whereNotIn('status', [Appointment::STATUS_CANCELLED])
             ->where(function ($scope) use ($trainerUserId, $studentId) {
                 $scope->where('trainer_user_id', $trainerUserId)
                     ->orWhere('student_id', $studentId);
