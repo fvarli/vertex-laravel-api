@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\ApiLogMiddleware;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureWorkspaceContext;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\RequestIdMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'user.active' => EnsureUserIsActive::class,
             'api.log' => ApiLogMiddleware::class,
+            'workspace.context' => EnsureWorkspaceContext::class,
         ]);
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('api/*')) {

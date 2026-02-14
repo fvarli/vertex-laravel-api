@@ -55,6 +55,37 @@ return [
         'degraded' => 'Bazı hizmetlerde sorun yaşanıyor.',
     ],
 
+    // Workspace
+    'workspace' => [
+        'created' => 'Workspace başarıyla oluşturuldu.',
+        'switched' => 'Aktif workspace başarıyla değiştirildi.',
+        'no_active_workspace' => 'Aktif workspace seçilmemiş.',
+        'membership_required' => 'Bu workspace için erişim yetkiniz yok.',
+    ],
+
+    // Student
+    'student' => [
+        'created' => 'Öğrenci başarıyla oluşturuldu.',
+        'updated' => 'Öğrenci başarıyla güncellendi.',
+        'status_updated' => 'Öğrenci durumu başarıyla güncellendi.',
+    ],
+
+    // Program
+    'program' => [
+        'created' => 'Program başarıyla oluşturuldu.',
+        'updated' => 'Program başarıyla güncellendi.',
+        'status_updated' => 'Program durumu başarıyla güncellendi.',
+        'active_exists_for_week' => 'Bu öğrenci ve hafta için zaten aktif bir program var.',
+    ],
+
+    // Appointment
+    'appointment' => [
+        'created' => 'Randevu başarıyla oluşturuldu.',
+        'updated' => 'Randevu başarıyla güncellendi.',
+        'status_updated' => 'Randevu durumu başarıyla güncellendi.',
+        'conflict' => 'Antrenör veya öğrenci için randevu çakışması tespit edildi.',
+    ],
+
     // Web
     'web' => [
         'api_only' => 'Bu uygulama yalnızca API içindir. Web erişimine izin verilmez.',

@@ -55,6 +55,37 @@ return [
         'degraded' => 'Some services are experiencing issues.',
     ],
 
+    // Workspace
+    'workspace' => [
+        'created' => 'Workspace created successfully.',
+        'switched' => 'Active workspace switched successfully.',
+        'no_active_workspace' => 'No active workspace selected.',
+        'membership_required' => 'You do not have access to this workspace.',
+    ],
+
+    // Student
+    'student' => [
+        'created' => 'Student created successfully.',
+        'updated' => 'Student updated successfully.',
+        'status_updated' => 'Student status updated successfully.',
+    ],
+
+    // Program
+    'program' => [
+        'created' => 'Program created successfully.',
+        'updated' => 'Program updated successfully.',
+        'status_updated' => 'Program status updated successfully.',
+        'active_exists_for_week' => 'An active program already exists for this student and week.',
+    ],
+
+    // Appointment
+    'appointment' => [
+        'created' => 'Appointment created successfully.',
+        'updated' => 'Appointment updated successfully.',
+        'status_updated' => 'Appointment status updated successfully.',
+        'conflict' => 'Appointment conflict detected for trainer or student.',
+    ],
+
     // Web
     'web' => [
         'api_only' => 'This is an API-only application. No web access allowed.',

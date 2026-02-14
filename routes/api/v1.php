@@ -1,10 +1,16 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AppointmentController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\ProgramController;
+use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\WhatsAppController;
+use App\Http\Controllers\Api\V1\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -62,5 +68,47 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             ->name('avatar.update');
         Route::delete('/avatar', 'deleteAvatar')->name('avatar.delete');
         Route::put('/password', 'changePassword')->name('password');
+    });
+
+    // Workspace routes
+    Route::prefix('me')->name('v1.workspace.')->controller(WorkspaceController::class)->group(function () {
+        Route::get('/workspaces', 'index')->name('index');
+    });
+    Route::post('/workspaces', [WorkspaceController::class, 'store'])->name('v1.workspace.store');
+    Route::post('/workspaces/{workspace}/switch', [WorkspaceController::class, 'switch'])->name('v1.workspace.switch');
+
+    Route::middleware('workspace.context')->group(function () {
+        // Student routes
+        Route::prefix('students')->name('v1.students.')->controller(StudentController::class)->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::get('/', 'index')->name('index');
+            Route::get('/{student}', 'show')->name('show');
+            Route::put('/{student}', 'update')->name('update');
+            Route::patch('/{student}/status', 'updateStatus')->name('status');
+        });
+
+        // Program routes
+        Route::prefix('students/{student}/programs')->name('v1.programs.')->controller(ProgramController::class)->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::get('/', 'index')->name('index');
+        });
+        Route::prefix('programs')->name('v1.programs.')->controller(ProgramController::class)->group(function () {
+            Route::get('/{program}', 'show')->name('show');
+            Route::put('/{program}', 'update')->name('update');
+            Route::patch('/{program}/status', 'updateStatus')->name('status');
+        });
+
+        // Appointment and calendar routes
+        Route::prefix('appointments')->name('v1.appointments.')->controller(AppointmentController::class)->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::get('/', 'index')->name('index');
+            Route::get('/{appointment}', 'show')->name('show');
+            Route::put('/{appointment}', 'update')->name('update');
+            Route::patch('/{appointment}/status', 'updateStatus')->name('status');
+        });
+        Route::get('/calendar/availability', [CalendarController::class, 'availability'])->name('v1.calendar.availability');
+
+        // WhatsApp helper routes
+        Route::get('/students/{student}/whatsapp-link', [WhatsAppController::class, 'studentLink'])->name('v1.whatsapp.student-link');
     });
 });

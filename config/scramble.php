@@ -29,7 +29,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'Vertex API v1 provides authentication, profile management, email verification, health checks, and rate-limited security-sensitive endpoints with a consistent JSON response contract.',
+        'description' => 'Vertex API v1 provides authentication, profile management, workspace-based multi-tenant coaching flows (students, programs, appointments, calendar availability, WhatsApp deep-link helper), email verification, health checks, and rate-limited security-sensitive endpoints with a consistent JSON response contract.',
     ],
 
     /*

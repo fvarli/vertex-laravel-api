@@ -6,6 +6,9 @@ use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -28,6 +31,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'avatar',
         'is_active',
+        'active_workspace_id',
         'password',
     ];
 
@@ -53,6 +57,23 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function activeWorkspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'active_workspace_id');
+    }
+
+    public function workspaces(): BelongsToMany
+    {
+        return $this->belongsToMany(Workspace::class, 'workspace_user')
+            ->withPivot(['role', 'is_active'])
+            ->withTimestamps();
+    }
+
+    public function ownedWorkspaces(): HasMany
+    {
+        return $this->hasMany(Workspace::class, 'owner_user_id');
     }
 
     public function sendPasswordResetNotification($token): void

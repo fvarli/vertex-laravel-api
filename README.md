@@ -1,8 +1,8 @@
 # Vertex Laravel API
 
-Versioned REST API skeleton built with Laravel 12 and Sanctum.
+Versioned REST API backend for a trainer/coach workflow, built with Laravel 12 and Sanctum.
 
-Repository status: active skeleton baseline for upcoming domain implementation.
+Repository status: API skeleton + Domain MVP (workspace, students, programs, appointments) is ready.
 
 ## Features
 
@@ -10,7 +10,13 @@ Repository status: active skeleton baseline for upcoming domain implementation.
 - Password flow: forgot-password, reset-password
 - Email verification: verify (signed URL), resend
 - Profile: me, update profile, change password, avatar upload/delete, account delete (soft delete)
-- User listing: verified users only
+- Multi-workspace tenancy: active workspace context per user
+- Role-based scope: `owner_admin` and `trainer`
+- Students: create, list, update, set status (`active` / `passive`)
+- Programs: weekly program management with ordered program items
+- Appointments: scheduling with overlap conflict protection
+- Calendar availability endpoint for frontend schedule view
+- WhatsApp deep-link helper endpoint for student messaging
 - Security middleware: request-id, forced JSON, security headers, locale
 - API logging: dedicated `apilog` channel with sensitive-data masking
 - Health endpoint with database/cache/queue checks
@@ -22,7 +28,7 @@ Repository status: active skeleton baseline for upcoming domain implementation.
 
 - PHP 8.2+
 - Composer
-- SQLite/MySQL/PostgreSQL (project defaults support all standard Laravel drivers)
+- SQLite/MySQL/PostgreSQL
 
 ## Quick Start
 
@@ -61,6 +67,19 @@ Protected routes use Sanctum bearer tokens.
 
 `Authorization: Bearer <token>`
 
+## Workspace Context
+
+- Domain endpoints require an active workspace (`workspace.context` middleware).
+- Use these first after login:
+  1. `GET /api/v1/me/workspaces`
+  2. `POST /api/v1/workspaces/{workspace}/switch`
+- If no active workspace is set, domain endpoints return `403`.
+
+## Role Scope
+
+- `owner_admin`: workspace-wide access to trainer-assigned records.
+- `trainer`: access limited to own assigned students/programs/appointments.
+
 ## Security Model
 
 ### Token Lifecycle
@@ -84,7 +103,7 @@ Protected routes use Sanctum bearer tokens.
 
 - API errors are rendered as JSON with consistent envelope shape.
 - Common HTTP statuses are explicitly handled: `401`, `403`, `404`, `405`, `422`, `429`, `500`.
-- In production (`APP_DEBUG=false`), server errors return generic messages (no internal exception leakage).
+- In production (`APP_DEBUG=false`), server errors return generic messages.
 
 ### API Log Masking
 
@@ -101,19 +120,41 @@ Public:
 - `POST /api/v1/forgot-password`
 - `POST /api/v1/reset-password`
 
-Authenticated (`auth:sanctum`, `user.active`):
+Authenticated (core):
 - `POST /api/v1/logout`
 - `POST /api/v1/logout-all`
 - `POST /api/v1/refresh-token`
-- `POST /api/v1/email/verify/{id}/{hash}` (`signed` + throttled)
-- `POST /api/v1/email/resend` (throttled)
-- `GET /api/v1/users` (verified + paginated)
+- `POST /api/v1/email/verify/{id}/{hash}`
+- `POST /api/v1/email/resend`
+- `GET /api/v1/users`
 - `GET /api/v1/me`
 - `PUT /api/v1/me`
 - `PUT /api/v1/me/password`
-- `POST /api/v1/me/avatar` (throttled)
+- `POST /api/v1/me/avatar`
 - `DELETE /api/v1/me/avatar`
-- `DELETE /api/v1/me` (throttled)
+- `DELETE /api/v1/me`
+
+Authenticated (workspace/domain):
+- `GET /api/v1/me/workspaces`
+- `POST /api/v1/workspaces`
+- `POST /api/v1/workspaces/{workspace}/switch`
+- `POST /api/v1/students`
+- `GET /api/v1/students`
+- `GET /api/v1/students/{student}`
+- `PUT /api/v1/students/{student}`
+- `PATCH /api/v1/students/{student}/status`
+- `POST /api/v1/students/{student}/programs`
+- `GET /api/v1/students/{student}/programs`
+- `GET /api/v1/programs/{program}`
+- `PUT /api/v1/programs/{program}`
+- `PATCH /api/v1/programs/{program}/status`
+- `POST /api/v1/appointments`
+- `GET /api/v1/appointments`
+- `GET /api/v1/appointments/{appointment}`
+- `PUT /api/v1/appointments/{appointment}`
+- `PATCH /api/v1/appointments/{appointment}/status`
+- `GET /api/v1/calendar/availability`
+- `GET /api/v1/students/{student}/whatsapp-link`
 
 ## Route Matrix
 
@@ -136,6 +177,33 @@ Authenticated (`auth:sanctum`, `user.active`):
 | POST | `/api/v1/me/avatar` | Bearer token | `auth:sanctum,user.active,throttle:avatar-upload` | `v1.profile.avatar.update` |
 | DELETE | `/api/v1/me/avatar` | Bearer token | `auth:sanctum,user.active` | `v1.profile.avatar.delete` |
 | DELETE | `/api/v1/me` | Bearer token | `auth:sanctum,user.active,throttle:delete-account` | `v1.profile.destroy` |
+| GET | `/api/v1/me/workspaces` | Bearer token | `auth:sanctum,user.active` | `v1.workspace.index` |
+| POST | `/api/v1/workspaces` | Bearer token | `auth:sanctum,user.active` | `v1.workspace.store` |
+| POST | `/api/v1/workspaces/{workspace}/switch` | Bearer token | `auth:sanctum,user.active` | `v1.workspace.switch` |
+| POST | `/api/v1/students` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.store` |
+| GET | `/api/v1/students` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.index` |
+| GET | `/api/v1/students/{student}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.show` |
+| PUT | `/api/v1/students/{student}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.update` |
+| PATCH | `/api/v1/students/{student}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.status` |
+| POST | `/api/v1/students/{student}/programs` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.store` |
+| GET | `/api/v1/students/{student}/programs` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.index` |
+| GET | `/api/v1/programs/{program}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.show` |
+| PUT | `/api/v1/programs/{program}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.update` |
+| PATCH | `/api/v1/programs/{program}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.status` |
+| POST | `/api/v1/appointments` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.store` |
+| GET | `/api/v1/appointments` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.index` |
+| GET | `/api/v1/appointments/{appointment}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.show` |
+| PUT | `/api/v1/appointments/{appointment}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.update` |
+| PATCH | `/api/v1/appointments/{appointment}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.status` |
+| GET | `/api/v1/calendar/availability` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.calendar.availability` |
+| GET | `/api/v1/students/{student}/whatsapp-link` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.whatsapp.student-link` |
+
+## Domain Rules
+
+- Student status lifecycle: `active` or `passive`.
+- Program guard: one `active` program per student per `week_start_date`.
+- Appointment guard: trainer and student overlap is blocked (`409 Conflict`).
+- WhatsApp link endpoint returns ready-to-open `wa.me` URL.
 
 ## Rate Limits
 
@@ -170,38 +238,58 @@ Validation error envelope:
   "success": false,
   "message": "Validation failed.",
   "errors": {
-    "email": ["The email field is required."]
+    "field": ["Validation message"]
   }
 }
 ```
 
-Authentication error envelope:
+Conflict error envelope (appointment overlap):
 
 ```json
 {
   "success": false,
-  "message": "Unauthenticated."
+  "message": "Appointment conflict detected for trainer or student."
 }
 ```
 
-Rate-limit error envelope:
+Paginated data envelope example:
 
 ```json
 {
-  "success": false,
-  "message": "Too many requests. Please try again later."
+  "success": true,
+  "message": "Success",
+  "data": {
+    "data": [],
+    "current_page": 1,
+    "per_page": 15,
+    "total": 0
+  }
 }
 ```
+
+## Frontend Integration Quickstart
+
+React client flow after login:
+1. Store token and set `Authorization: Bearer <token>`.
+2. Fetch workspaces via `GET /api/v1/me/workspaces`.
+3. Select active workspace via `POST /api/v1/workspaces/{workspace}/switch`.
+4. Consume domain endpoints (`students`, `programs`, `appointments`, `calendar`).
+5. Use `GET /api/v1/students/{student}/whatsapp-link` for one-click WhatsApp action in table rows.
+
+Recommended headers:
+- `Accept: application/json`
+- `Authorization: Bearer <token>`
+- optional `X-Request-Id`
 
 ## API Docs (Scramble)
 
-If Scramble routes are enabled in your environment:
+If Scramble routes are enabled:
 - UI: `/docs/api`
 - OpenAPI JSON: `/api.json`
 
 If UI opens but `/api.json` returns `404`, check:
 - `APP_URL` matches the served host (example: `https://vertex.local`).
-- Local host mapping and TLS setup for that host are correct.
+- Local host mapping and TLS setup are correct.
 - Docs route access middleware is not blocking JSON export in your environment.
 - Route/config cache is refreshed after env changes:
   - `php artisan optimize:clear`
@@ -221,20 +309,13 @@ API responses include:
 
 ## Operational Defaults
 
-- Time handling is UTC-first:
-  - app timezone default is `UTC`
-  - database connection timezone is set to `UTC` where supported
-- Localization is header-driven:
-  - `Accept-Language` supports `en` and `tr`
-  - unsupported locales fall back to `en`
-- API-only access policy:
-  - web root and non-API web routes return `403` JSON
-  - optional strict JSON gate with `API_STRICT_JSON_ONLY=true`
+- Time handling is UTC-first.
+- Localization is header-driven (`Accept-Language`: `en` or `tr`, fallback `en`).
+- API-only access policy is enabled.
 - Avatar upload policy:
   - allowed types: `jpeg`, `jpg`, `png`, `webp`
   - max file size: `2MB`
   - max dimensions: `4096x4096`
-  - replacing avatar removes previous file from storage
 
 ## Running Tests
 
@@ -242,46 +323,18 @@ API responses include:
 php artisan test
 ```
 
-Current baseline: `103` tests passing (`401` assertions).
-
-## Developer Confidence
-
-- Feature coverage includes:
-  - authentication and token flows
-  - profile, avatar, and account deletion flows
-  - email verification and resend flows
-  - middleware behavior (request-id, locale, security headers, forced-json)
-  - rate-limit enforcement
-  - API exception handling responses
-- Unit coverage includes API log masking logic.
+Current baseline: `111` tests passing (`430` assertions).
 
 ## CI Pipeline
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push/PR to `main`:
-- `php-tests` job:
-  - `composer install`
-  - `composer audit --locked --no-interaction`
-  - `php artisan test`
-- `code-style` job:
-  - `./vendor/bin/pint --test --dirty`
+- `php-tests`: install, audit, test
+- `code-style`: `./vendor/bin/pint --test --dirty`
 
 ## Keeping README Current
 
-Treat README as code. Update it in the same change set when any of these change:
-- API endpoints, route names, middleware, or auth rules
-- Response envelopes or error semantics
-- Rate limits or security headers
-- CI workflow behavior
-- Environment variables that affect API behavior (example: `API_STRICT_JSON_ONLY`)
+Treat README as code. Update it in the same change set when endpoints, middleware, contracts, limits, CI, or env-based behavior changes.
 
-PR checklist (required):
+PR checklist:
 - [ ] Code changes reviewed for README impact
-- [ ] README updated or explicitly confirmed as still accurate
-
-## Notes
-
-- App and database are configured for UTC usage.
-- Responses follow a consistent envelope:
-  - success: `success`, `message`, `data`
-  - error: `success`, `message`, optional `errors`
-- Recommended protected branch target: `main`
+- [ ] README updated or explicitly confirmed as accurate
