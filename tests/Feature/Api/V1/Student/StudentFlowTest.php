@@ -79,4 +79,36 @@ class StudentFlowTest extends TestCase
         $response->assertStatus(403)
             ->assertJsonPath('success', false);
     }
+
+    public function test_students_index_supports_search_sort_and_direction_contract(): void
+    {
+        $owner = User::factory()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $workspace->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $owner->update(['active_workspace_id' => $workspace->id]);
+
+        Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'full_name' => 'Ahmet Yilmaz',
+            'phone' => '+905550000001',
+            'status' => Student::STATUS_ACTIVE,
+        ]);
+
+        $target = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'full_name' => 'Berk Can',
+            'phone' => '+905550000002',
+            'status' => Student::STATUS_ACTIVE,
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->getJson('/api/v1/students?search=berk&sort=full_name&direction=asc&status=active');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.data.0.id', $target->id);
+    }
 }

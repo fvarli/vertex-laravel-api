@@ -16,13 +16,17 @@ class ListAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'search' => ['nullable', 'string', 'max:120'],
             'status' => ['nullable', 'string', Rule::in([
                 Appointment::STATUS_PLANNED,
                 Appointment::STATUS_DONE,
                 Appointment::STATUS_CANCELLED,
                 Appointment::STATUS_NO_SHOW,
             ])],
+            'sort' => ['nullable', 'string', Rule::in(['id', 'starts_at', 'ends_at', 'created_at'])],
+            'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'trainer_id' => ['nullable', 'integer', 'exists:users,id'],
             'student_id' => ['nullable', 'integer', 'exists:students,id'],
             'from' => ['nullable', 'date'],

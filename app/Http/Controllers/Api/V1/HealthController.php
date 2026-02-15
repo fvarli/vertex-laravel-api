@@ -27,6 +27,7 @@ class HealthController
             'version' => 'v1',
             'checks'  => $result['checks'],
             'message' => $message,
+            'request_id' => request()->attributes->get('request_id'),
         ]);
     }
 }

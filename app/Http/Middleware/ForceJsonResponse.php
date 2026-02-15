@@ -14,6 +14,7 @@ class ForceJsonResponse
             return response()->json([
                 'success' => false,
                 'message' => __('api.web.api_client_only'),
+                'request_id' => $request->attributes->get('request_id'),
             ], 403);
         }
 

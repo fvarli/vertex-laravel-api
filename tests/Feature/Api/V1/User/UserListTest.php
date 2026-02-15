@@ -26,6 +26,7 @@ class UserListTest extends TestCase
             ->assertJsonStructure([
                 'success',
                 'message',
+                'request_id',
                 'data' => [
                     'data' => [
                         '*' => ['id', 'name', 'surname', 'email', 'phone', 'avatar', 'is_active', 'created_at', 'updated_at'],
@@ -33,6 +34,8 @@ class UserListTest extends TestCase
                     'links',
                     'meta',
                 ],
+                'meta',
+                'links',
             ]);
     }
 
@@ -106,6 +109,22 @@ class UserListTest extends TestCase
         $data = $response->json('data');
         $this->assertEquals(2, $data['meta']['current_page']);
         $this->assertNotEmpty($data['data']);
+    }
+
+    public function test_search_and_sort_contract_filters_user_list(): void
+    {
+        $userA = User::factory()->create(['name' => 'Aaron']);
+        $userB = User::factory()->create(['name' => 'Zelda']);
+        $authUser = User::factory()->create();
+        Sanctum::actingAs($authUser);
+
+        $response = $this->getJson($this->endpoint.'?search=eld&sort=name&direction=asc&per_page=15');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.data.0.id', $userB->id);
+
+        $this->assertNotEquals($userA->id, $response->json('data.data.0.id'));
     }
 
     public function test_unauthenticated_user_cannot_list_users(): void

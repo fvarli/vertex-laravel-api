@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Requests\Api\V1\Student\ListStudentRequest;
 use App\Http\Requests\Api\V1\Student\StoreStudentRequest;
 use App\Http\Requests\Api\V1\Student\UpdateStudentRequest;
 use App\Http\Requests\Api\V1\Student\UpdateStudentStatusRequest;
@@ -18,14 +19,17 @@ class StudentController extends BaseController
     /**
      * List students in active workspace with role-based scope and filters.
      */
-    public function index(Request $request): JsonResponse
+    public function index(ListStudentRequest $request): JsonResponse
     {
+        $validated = $request->validated();
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = $request->attributes->get('workspace_role');
         $user = $request->user();
-        $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
-        $status = $request->query('status', 'active');
-        $search = trim((string) $request->query('search', ''));
+        $perPage = (int) ($validated['per_page'] ?? 15);
+        $status = (string) ($validated['status'] ?? 'active');
+        $search = trim((string) ($validated['search'] ?? ''));
+        $sort = (string) ($validated['sort'] ?? 'id');
+        $direction = (string) ($validated['direction'] ?? 'desc');
 
         $students = Student::query()
             ->where('workspace_id', $workspaceId)
@@ -37,7 +41,7 @@ class StudentController extends BaseController
                         ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
-            ->latest('id')
+            ->orderBy($sort, $direction)
             ->paginate($perPage);
 
         return $this->sendResponse(StudentResource::collection($students)->response()->getData(true));

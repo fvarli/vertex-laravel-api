@@ -73,6 +73,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => __('api.too_many_requests'),
+                    'request_id' => $request->attributes->get('request_id'),
                 ], 429)->withHeaders([
                     'Retry-After' => $e->getHeaders()['Retry-After'] ?? 60,
                 ]);
@@ -92,6 +93,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => __('api.forbidden'),
+                    'request_id' => $request->attributes->get('request_id'),
                 ], 403);
             }
         });
@@ -109,6 +111,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => __('api.not_found'),
+                    'request_id' => $request->attributes->get('request_id'),
                 ], 404);
             }
         });
@@ -126,6 +129,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => __('api.method_not_allowed'),
+                    'request_id' => $request->attributes->get('request_id'),
                 ], 405);
             }
         });
@@ -143,6 +147,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => __('api.unauthenticated'),
+                    'request_id' => $request->attributes->get('request_id'),
                 ], 401);
             }
         });
@@ -162,6 +167,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'message' => __('api.validation_failed'),
                     'errors' => $e->errors(),
+                    'request_id' => $request->attributes->get('request_id'),
                 ], 422);
             }
         });
@@ -181,6 +187,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => $statusCode >= 500 ? __('api.server_error') : __('api.error'),
+                    'request_id' => $request->attributes->get('request_id'),
                 ], $statusCode);
             }
         });
@@ -199,6 +206,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => config('app.debug') ? $e->getMessage() : __('api.server_error'),
+                    'request_id' => $request->attributes->get('request_id'),
                 ], 500);
             }
         });

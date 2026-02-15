@@ -121,6 +121,44 @@ class AppointmentFlowTest extends TestCase
             ->assertJsonValidationErrors(['student_id']);
     }
 
+    public function test_appointments_index_supports_search_sort_and_direction_contract(): void
+    {
+        [$owner, $workspace] = $this->createOwnerWorkspaceContext();
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'full_name' => 'Ceren Kaya',
+            'phone' => '+905556666666',
+        ]);
+
+        Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'student_id' => $student->id,
+            'location' => 'Gym A',
+            'starts_at' => '2026-03-01 09:00:00',
+            'ends_at' => '2026-03-01 10:00:00',
+        ]);
+
+        Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'student_id' => $student->id,
+            'location' => 'Gym B',
+            'starts_at' => '2026-03-01 11:00:00',
+            'ends_at' => '2026-03-01 12:00:00',
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->getJson('/api/v1/appointments?search=Gym%20A&sort=starts_at&direction=asc');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.location', 'Gym A');
+    }
+
     private function createOwnerWorkspaceContext(): array
     {
         $owner = User::factory()->ownerAdmin()->create();

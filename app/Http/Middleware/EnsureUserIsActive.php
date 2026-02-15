@@ -16,6 +16,7 @@ class EnsureUserIsActive
             return response()->json([
                 'success' => false,
                 'message' => __('api.auth.account_deactivated'),
+                'request_id' => $request->attributes->get('request_id'),
             ], 403);
         }
 

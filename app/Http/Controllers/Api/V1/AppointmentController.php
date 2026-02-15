@@ -30,8 +30,11 @@ class AppointmentController extends BaseController
         $workspaceRole = $request->attributes->get('workspace_role');
         $user = $request->user();
         $perPage = (int) ($validated['per_page'] ?? 15);
+        $search = trim((string) ($validated['search'] ?? ''));
         $from = $validated['from'] ?? $validated['date_from'] ?? null;
         $to = $validated['to'] ?? $validated['date_to'] ?? null;
+        $sort = (string) ($validated['sort'] ?? 'starts_at');
+        $direction = (string) ($validated['direction'] ?? 'desc');
 
         $appointments = Appointment::query()
             ->where('workspace_id', $workspaceId)
@@ -41,7 +44,17 @@ class AppointmentController extends BaseController
             ->when(isset($validated['status']), fn ($q) => $q->where('status', $validated['status']))
             ->when(isset($validated['trainer_id']), fn ($q) => $q->where('trainer_user_id', (int) $validated['trainer_id']))
             ->when(isset($validated['student_id']), fn ($q) => $q->where('student_id', (int) $validated['student_id']))
-            ->latest('starts_at')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('location', 'like', "%{$search}%")
+                        ->orWhere('notes', 'like', "%{$search}%")
+                        ->orWhereHas('student', function ($studentQuery) use ($search) {
+                            $studentQuery->where('full_name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->orderBy($sort, $direction)
             ->paginate($perPage);
 
         return $this->sendResponse(AppointmentResource::collection($appointments)->response()->getData(true));

@@ -257,7 +257,8 @@ Success envelope:
 {
   "success": true,
   "message": "Operation successful.",
-  "data": {}
+  "data": {},
+  "request_id": "d92861c5-5f30-4f3e-bf3a-3a4f053f8c5a"
 }
 ```
 
@@ -269,7 +270,8 @@ Validation error envelope:
   "message": "Validation failed.",
   "errors": {
     "field": ["Validation message"]
-  }
+  },
+  "request_id": "d92861c5-5f30-4f3e-bf3a-3a4f053f8c5a"
 }
 ```
 
@@ -281,7 +283,8 @@ Conflict error envelope (appointment overlap):
   "message": "Appointment conflict detected for trainer or student.",
   "errors": {
     "code": ["time_slot_conflict"]
-  }
+  },
+  "request_id": "d92861c5-5f30-4f3e-bf3a-3a4f053f8c5a"
 }
 ```
 
@@ -291,11 +294,20 @@ Paginated data envelope example:
 {
   "success": true,
   "message": "Success",
+  "request_id": "d92861c5-5f30-4f3e-bf3a-3a4f053f8c5a",
   "data": {
-    "data": [],
+    "data": []
+  },
+  "meta": {
     "current_page": 1,
     "per_page": 15,
     "total": 0
+  },
+  "links": {
+    "first": "https://vertex.local/api/v1/students?page=1",
+    "last": "https://vertex.local/api/v1/students?page=1",
+    "prev": null,
+    "next": null
   }
 }
 ```
@@ -306,6 +318,7 @@ Calendar availability envelope example:
 {
   "success": true,
   "message": "Success",
+  "request_id": "d92861c5-5f30-4f3e-bf3a-3a4f053f8c5a",
   "data": {
     "from": "2026-02-20 00:00:00",
     "to": "2026-02-27 23:59:59",
@@ -319,6 +332,12 @@ Calendar availability envelope example:
   }
 }
 ```
+
+List endpoint query contract:
+- shared: `page`, `per_page`, `search`, `sort`, `direction`
+- students: `status` (`active`, `passive`, `all`)
+- appointments: `status`, `trainer_id`, `student_id`, `from|to`, `date_from|date_to`
+- users: `search`, `sort` (`id`, `name`, `email`, `created_at`)
 
 ## Frontend Integration Quickstart
 
