@@ -26,6 +26,7 @@ class AppointmentFactory extends Factory
             'starts_at' => $start,
             'ends_at' => (clone $start)->addHour(),
             'status' => Appointment::STATUS_PLANNED,
+            'whatsapp_status' => Appointment::WHATSAPP_STATUS_NOT_SENT,
             'location' => fake()->optional()->streetAddress(),
             'notes' => fake()->optional()->sentence(),
         ];

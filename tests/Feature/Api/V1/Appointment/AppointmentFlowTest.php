@@ -159,6 +159,46 @@ class AppointmentFlowTest extends TestCase
             ->assertJsonPath('data.data.0.location', 'Gym A');
     }
 
+    public function test_appointment_whatsapp_status_can_be_manually_toggled_and_filtered(): void
+    {
+        [$owner, $workspace] = $this->createOwnerWorkspaceContext();
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'phone' => '+905556666123',
+        ]);
+
+        $appointment = Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+            'student_id' => $student->id,
+            'whatsapp_status' => Appointment::WHATSAPP_STATUS_NOT_SENT,
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $this->patchJson("/api/v1/appointments/{$appointment->id}/whatsapp-status", [
+            'whatsapp_status' => Appointment::WHATSAPP_STATUS_SENT,
+        ])->assertOk()
+            ->assertJsonPath('data.whatsapp_status', Appointment::WHATSAPP_STATUS_SENT)
+            ->assertJsonPath('data.whatsapp_marked_by_user_id', $owner->id);
+
+        $appointment->refresh();
+        $this->assertNotNull($appointment->whatsapp_marked_at);
+
+        $filteredSent = $this->getJson('/api/v1/appointments?whatsapp_status=sent');
+        $filteredSent->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.id', $appointment->id);
+
+        $this->patchJson("/api/v1/appointments/{$appointment->id}/whatsapp-status", [
+            'whatsapp_status' => Appointment::WHATSAPP_STATUS_NOT_SENT,
+        ])->assertOk()
+            ->assertJsonPath('data.whatsapp_status', Appointment::WHATSAPP_STATUS_NOT_SENT)
+            ->assertJsonPath('data.whatsapp_marked_at', null)
+            ->assertJsonPath('data.whatsapp_marked_by_user_id', null);
+    }
+
     public function test_trainer_cannot_set_trainer_user_id_on_store_or_update(): void
     {
         $owner = User::factory()->ownerAdmin()->create();

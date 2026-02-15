@@ -18,6 +18,10 @@ class Appointment extends Model
 
     public const STATUS_NO_SHOW = 'no_show';
 
+    public const WHATSAPP_STATUS_SENT = 'sent';
+
+    public const WHATSAPP_STATUS_NOT_SENT = 'not_sent';
+
     protected $fillable = [
         'workspace_id',
         'trainer_user_id',
@@ -25,6 +29,9 @@ class Appointment extends Model
         'starts_at',
         'ends_at',
         'status',
+        'whatsapp_status',
+        'whatsapp_marked_at',
+        'whatsapp_marked_by_user_id',
         'location',
         'notes',
     ];
@@ -34,6 +41,7 @@ class Appointment extends Model
         return [
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'whatsapp_marked_at' => 'datetime',
         ];
     }
 
@@ -50,5 +58,10 @@ class Appointment extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function whatsappMarkedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'whatsapp_marked_by_user_id');
     }
 }

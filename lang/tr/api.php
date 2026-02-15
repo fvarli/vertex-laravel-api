@@ -84,6 +84,7 @@ return [
         'created' => 'Randevu başarıyla oluşturuldu.',
         'updated' => 'Randevu başarıyla güncellendi.',
         'status_updated' => 'Randevu durumu başarıyla güncellendi.',
+        'whatsapp_status_updated' => 'Randevu WhatsApp durumu başarıyla güncellendi.',
         'conflict' => 'Antrenör veya öğrenci için randevu çakışması tespit edildi.',
     ],
 

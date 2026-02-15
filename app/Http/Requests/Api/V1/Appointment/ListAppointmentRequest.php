@@ -25,6 +25,11 @@ class ListAppointmentRequest extends FormRequest
                 Appointment::STATUS_CANCELLED,
                 Appointment::STATUS_NO_SHOW,
             ])],
+            'whatsapp_status' => ['nullable', 'string', Rule::in([
+                Appointment::WHATSAPP_STATUS_SENT,
+                Appointment::WHATSAPP_STATUS_NOT_SENT,
+                'all',
+            ])],
             'sort' => ['nullable', 'string', Rule::in(['id', 'starts_at', 'ends_at', 'created_at'])],
             'direction' => ['nullable', 'string', Rule::in(['asc', 'desc'])],
             'trainer_id' => ['nullable', 'integer', 'exists:users,id'],

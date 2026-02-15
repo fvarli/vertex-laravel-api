@@ -34,4 +34,16 @@ class WhatsAppController extends BaseController
 
         return $this->sendResponse(['url' => $link]);
     }
+
+    /**
+     * Build WhatsApp deep-link URL for a specific appointment.
+     */
+    public function appointmentLink(Request $request, Appointment $appointment): JsonResponse
+    {
+        $this->authorize('view', $appointment);
+
+        $link = $this->whatsAppLinkService->build($appointment->student, $appointment, $request->query('template'));
+
+        return $this->sendResponse(['url' => $link]);
+    }
 }

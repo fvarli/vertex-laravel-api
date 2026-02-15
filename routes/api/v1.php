@@ -104,6 +104,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::prefix('appointments')->name('v1.appointments.')->controller(AppointmentController::class)->group(function () {
             Route::post('/', 'store')->middleware('idempotent.appointments')->name('store');
             Route::get('/', 'index')->name('index');
+            Route::patch('/{appointment}/whatsapp-status', 'updateWhatsappStatus')->name('whatsapp-status');
             Route::get('/{appointment}', 'show')->name('show');
             Route::put('/{appointment}', 'update')->name('update');
             Route::patch('/{appointment}/status', 'updateStatus')->name('status');
@@ -119,5 +120,6 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
 
         // WhatsApp helper routes
         Route::get('/students/{student}/whatsapp-link', [WhatsAppController::class, 'studentLink'])->name('v1.whatsapp.student-link');
+        Route::get('/appointments/{appointment}/whatsapp-link', [WhatsAppController::class, 'appointmentLink'])->name('v1.whatsapp.appointment-link');
     });
 });

@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\Appointment\ListAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\StoreAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentStatusRequest;
+use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentWhatsappStatusRequest;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use App\Models\Student;
@@ -19,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends BaseController
 {
-    private const AUDIT_FIELDS = ['student_id', 'trainer_user_id', 'starts_at', 'ends_at', 'status', 'location'];
+    private const AUDIT_FIELDS = ['student_id', 'trainer_user_id', 'starts_at', 'ends_at', 'status', 'whatsapp_status', 'whatsapp_marked_at', 'whatsapp_marked_by_user_id', 'location'];
 
     public function __construct(
         private readonly AppointmentService $appointmentService,
@@ -48,6 +49,7 @@ class AppointmentController extends BaseController
             ->when($from, fn ($q, $fromValue) => $q->where('starts_at', '>=', $fromValue))
             ->when($to, fn ($q, $toValue) => $q->where('starts_at', '<=', $toValue))
             ->when(isset($validated['status']), fn ($q) => $q->where('status', $validated['status']))
+            ->when(isset($validated['whatsapp_status']) && $validated['whatsapp_status'] !== 'all', fn ($q) => $q->where('whatsapp_status', $validated['whatsapp_status']))
             ->when(isset($validated['trainer_id']), fn ($q) => $q->where('trainer_user_id', (int) $validated['trainer_id']))
             ->when(isset($validated['student_id']), fn ($q) => $q->where('student_id', (int) $validated['student_id']))
             ->when($search !== '', function ($query) use ($search) {
@@ -240,5 +242,36 @@ class AppointmentController extends BaseController
         );
 
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.status_updated'));
+    }
+
+    /**
+     * Update manual WhatsApp message tracking status for an appointment.
+     */
+    public function updateWhatsappStatus(UpdateAppointmentWhatsappStatusRequest $request, Appointment $appointment): JsonResponse
+    {
+        $this->authorize('update', $appointment);
+
+        $before = $appointment->toArray();
+        $status = $request->validated('whatsapp_status');
+        $isSent = $status === Appointment::WHATSAPP_STATUS_SENT;
+
+        $appointment->update([
+            'whatsapp_status' => $status,
+            'whatsapp_marked_at' => $isSent ? now()->utc() : null,
+            'whatsapp_marked_by_user_id' => $isSent ? $request->user()->id : null,
+        ]);
+
+        $appointment = $appointment->refresh()->load(['student', 'trainer']);
+
+        $this->auditService->record(
+            request: $request,
+            event: 'appointment.whatsapp_status_updated',
+            auditable: $appointment,
+            before: $before,
+            after: $appointment->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
+
+        return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.whatsapp_status_updated'));
     }
 }

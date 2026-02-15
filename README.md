@@ -186,9 +186,10 @@ Authenticated (workspace/domain):
 - `GET /api/v1/appointments/{appointment}`
 - `PUT /api/v1/appointments/{appointment}`
 - `PATCH /api/v1/appointments/{appointment}/status`
+- `PATCH /api/v1/appointments/{appointment}/whatsapp-status`
+- `GET /api/v1/appointments/{appointment}/whatsapp-link`
 - `GET /api/v1/calendar`
 - `GET /api/v1/calendar/availability`
-- `GET /api/v1/students/{student}/whatsapp-link`
 
 ## Route Matrix
 
@@ -233,9 +234,10 @@ Authenticated (workspace/domain):
 | GET | `/api/v1/appointments/{appointment}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.show` |
 | PUT | `/api/v1/appointments/{appointment}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.update` |
 | PATCH | `/api/v1/appointments/{appointment}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.status` |
+| PATCH | `/api/v1/appointments/{appointment}/whatsapp-status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.whatsapp-status` |
+| GET | `/api/v1/appointments/{appointment}/whatsapp-link` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.whatsapp.appointment-link` |
 | GET | `/api/v1/calendar` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.calendar.index` |
 | GET | `/api/v1/calendar/availability` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.calendar.availability` |
-| GET | `/api/v1/students/{student}/whatsapp-link` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.whatsapp.student-link` |
 
 ## Domain Rules
 
@@ -245,7 +247,7 @@ Authenticated (workspace/domain):
 - Program item guard: `day_of_week + order_no` must be unique inside a program payload.
 - Appointment guard: trainer and student overlap is blocked (`422 Unprocessable Entity`, `errors.code[0] = time_slot_conflict`).
 - Appointment idempotency guard: optional `Idempotency-Key` prevents duplicate create requests for the same actor/workspace.
-- WhatsApp link endpoint returns ready-to-open `wa.me` URL.
+- WhatsApp reminder flow is appointment-scoped: link generation and manual `sent/not_sent` tracking live under appointment endpoints.
 
 ## Rate Limits
 
@@ -349,7 +351,7 @@ List endpoint query contract:
 - shared: `page`, `per_page`, `search`, `sort`, `direction`
 - students: `status` (`active`, `passive`, `all`)
 - programs: `status` (`draft`, `active`, `archived`, `all`)
-- appointments: `status`, `trainer_id`, `student_id`, `from|to`, `date_from|date_to`
+- appointments: `status`, `whatsapp_status` (`sent`, `not_sent`, `all`), `trainer_id`, `student_id`, `from|to`, `date_from|date_to`
 - users: `search`, `sort` (`id`, `name`, `email`, `created_at`)
 - reporting: `date_from`, `date_to`, `group_by` (`day`, `week`, `month`), `trainer_id` (owner_admin only)
 
@@ -382,7 +384,9 @@ React client flow after login:
 2. Fetch workspaces via `GET /api/v1/me/workspaces`.
 3. Select active workspace via `POST /api/v1/workspaces/{workspace}/switch`.
 4. Consume domain endpoints (`students`, `programs`, `appointments`, `calendar`).
-5. Use `GET /api/v1/students/{student}/whatsapp-link` for one-click WhatsApp action in table rows.
+5. For reminder messaging from scheduling screens:
+   - fetch deep link with `GET /api/v1/appointments/{appointment}/whatsapp-link`
+   - persist delivery state with `PATCH /api/v1/appointments/{appointment}/whatsapp-status`
 
 Recommended headers:
 - `Accept: application/json`

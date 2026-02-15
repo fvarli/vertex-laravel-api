@@ -84,6 +84,7 @@ return [
         'created' => 'Appointment created successfully.',
         'updated' => 'Appointment updated successfully.',
         'status_updated' => 'Appointment status updated successfully.',
+        'whatsapp_status_updated' => 'Appointment WhatsApp status updated successfully.',
         'conflict' => 'Appointment conflict detected for trainer or student.',
     ],
 
