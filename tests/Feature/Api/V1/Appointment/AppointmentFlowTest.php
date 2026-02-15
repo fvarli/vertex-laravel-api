@@ -159,6 +159,52 @@ class AppointmentFlowTest extends TestCase
             ->assertJsonPath('data.data.0.location', 'Gym A');
     }
 
+    public function test_trainer_cannot_set_trainer_user_id_on_store_or_update(): void
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $trainerA = User::factory()->trainer()->create();
+        $trainerB = User::factory()->trainer()->create();
+
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $workspace->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $workspace->users()->attach($trainerA->id, ['role' => 'trainer', 'is_active' => true]);
+        $workspace->users()->attach($trainerB->id, ['role' => 'trainer', 'is_active' => true]);
+        $trainerA->update(['active_workspace_id' => $workspace->id]);
+
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainerA->id,
+            'phone' => '+905557777777',
+        ]);
+
+        Sanctum::actingAs($trainerA);
+
+        $storeResponse = $this->postJson('/api/v1/appointments', [
+            'student_id' => $student->id,
+            'trainer_user_id' => $trainerB->id,
+            'starts_at' => '2026-04-01 10:00:00',
+            'ends_at' => '2026-04-01 11:00:00',
+        ]);
+
+        $storeResponse->assertStatus(403)
+            ->assertJsonPath('success', false);
+
+        $appointment = Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainerA->id,
+            'student_id' => $student->id,
+            'starts_at' => '2026-04-02 10:00:00',
+            'ends_at' => '2026-04-02 11:00:00',
+        ]);
+
+        $updateResponse = $this->putJson("/api/v1/appointments/{$appointment->id}", [
+            'trainer_user_id' => $trainerB->id,
+        ]);
+
+        $updateResponse->assertStatus(403)
+            ->assertJsonPath('success', false);
+    }
+
     private function createOwnerWorkspaceContext(): array
     {
         $owner = User::factory()->ownerAdmin()->create();

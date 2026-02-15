@@ -71,6 +71,10 @@ class AppointmentController extends BaseController
 
         $trainerId = $request->user()->id;
 
+        if ($workspaceRole !== 'owner_admin' && isset($data['trainer_user_id'])) {
+            return $this->sendError(__('api.forbidden'), [], 403);
+        }
+
         if ($workspaceRole === 'owner_admin' && isset($data['trainer_user_id'])) {
             $isWorkspaceTrainer = User::query()
                 ->whereKey((int) $data['trainer_user_id'])
@@ -139,8 +143,13 @@ class AppointmentController extends BaseController
         $this->authorize('update', $appointment);
 
         $data = $request->validated();
+        $workspaceRole = $request->attributes->get('workspace_role');
 
         if (isset($data['trainer_user_id'])) {
+            if ($workspaceRole !== 'owner_admin') {
+                return $this->sendError(__('api.forbidden'), [], 403);
+            }
+
             $isWorkspaceTrainer = User::query()
                 ->whereKey((int) $data['trainer_user_id'])
                 ->whereHas('workspaces', fn ($q) => $q
@@ -167,7 +176,6 @@ class AppointmentController extends BaseController
                 ]);
             }
 
-            $workspaceRole = $request->attributes->get('workspace_role');
             $trainerIdForAccess = (int) ($data['trainer_user_id'] ?? $appointment->trainer_user_id);
 
             if ($workspaceRole !== 'owner_admin' && (int) $student->trainer_user_id !== $trainerIdForAccess) {

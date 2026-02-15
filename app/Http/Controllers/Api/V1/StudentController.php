@@ -57,6 +57,10 @@ class StudentController extends BaseController
         $data = $request->validated();
         $trainerUserId = $request->user()->id;
 
+        if ($workspaceRole !== 'owner_admin' && isset($data['trainer_user_id'])) {
+            return $this->sendError(__('api.forbidden'), [], 403);
+        }
+
         if ($workspaceRole === 'owner_admin' && isset($data['trainer_user_id'])) {
             $isWorkspaceTrainer = User::query()
                 ->whereKey((int) $data['trainer_user_id'])
@@ -104,8 +108,13 @@ class StudentController extends BaseController
         $this->authorize('update', $student);
 
         $data = $request->validated();
+        $workspaceRole = $request->attributes->get('workspace_role');
 
         if (isset($data['trainer_user_id'])) {
+            if ($workspaceRole !== 'owner_admin') {
+                return $this->sendError(__('api.forbidden'), [], 403);
+            }
+
             $isWorkspaceTrainer = User::query()
                 ->whereKey((int) $data['trainer_user_id'])
                 ->whereHas('workspaces', fn ($q) => $q

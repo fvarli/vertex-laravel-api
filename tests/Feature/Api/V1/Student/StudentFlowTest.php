@@ -111,4 +111,40 @@ class StudentFlowTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.data.0.id', $target->id);
     }
+
+    public function test_trainer_cannot_set_trainer_user_id_on_store_or_update(): void
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $trainerA = User::factory()->trainer()->create();
+        $trainerB = User::factory()->trainer()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+
+        $workspace->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $workspace->users()->attach($trainerA->id, ['role' => 'trainer', 'is_active' => true]);
+        $workspace->users()->attach($trainerB->id, ['role' => 'trainer', 'is_active' => true]);
+        $trainerA->update(['active_workspace_id' => $workspace->id]);
+
+        Sanctum::actingAs($trainerA);
+
+        $storeResponse = $this->postJson('/api/v1/students', [
+            'full_name' => 'Trainer Owned Student',
+            'phone' => '+905550001100',
+            'trainer_user_id' => $trainerB->id,
+        ]);
+
+        $storeResponse->assertStatus(403)
+            ->assertJsonPath('success', false);
+
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainerA->id,
+        ]);
+
+        $updateResponse = $this->putJson("/api/v1/students/{$student->id}", [
+            'trainer_user_id' => $trainerB->id,
+        ]);
+
+        $updateResponse->assertStatus(403)
+            ->assertJsonPath('success', false);
+    }
 }

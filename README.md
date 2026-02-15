@@ -230,6 +230,7 @@ Authenticated (workspace/domain):
 ## Domain Rules
 
 - Student status lifecycle: `active` or `passive`.
+- `trainer_user_id` assignment/reassignment is owner-admin only.
 - Program guard: one `active` program per student per `week_start_date`.
 - Program item guard: `day_of_week + order_no` must be unique inside a program payload.
 - Appointment guard: trainer and student overlap is blocked (`422 Unprocessable Entity`, `errors.code[0] = time_slot_conflict`).
@@ -359,6 +360,8 @@ Recommended headers:
 If Scramble routes are enabled:
 - UI: `/docs/api`
 - OpenAPI JSON: `/api.json`
+- Local HTTPS server target can be customized with:
+  - `SCRAMBLE_LOCAL_HTTPS_URL=https://vertex.local`
 
 If UI opens but `/api.json` returns `404`, check:
 - `APP_URL` matches the served host (example: `https://vertex.local`).
@@ -366,6 +369,55 @@ If UI opens but `/api.json` returns `404`, check:
 - Docs route access middleware is not blocking JSON export in your environment.
 - Route/config cache is refreshed after env changes:
   - `php artisan optimize:clear`
+
+Example docs URLs:
+- `https://vertex.local/docs/api`
+- `https://vertex.local/api.json`
+
+### Quick API Examples (TR/EN friendly)
+
+Login:
+
+```bash
+curl -k -X POST 'https://vertex.local/api/v1/login' \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"owner@vertex.local","password":"password123"}'
+```
+
+Switch workspace:
+
+```bash
+curl -k -X POST 'https://vertex.local/api/v1/workspaces/1/switch' \
+  -H 'Accept: application/json' \
+  -H 'Authorization: Bearer <token>'
+```
+
+List students (query contract):
+
+```bash
+curl -k 'https://vertex.local/api/v1/students?status=active&search=ali&sort=full_name&direction=asc&page=1&per_page=15' \
+  -H 'Accept: application/json' \
+  -H 'Authorization: Bearer <token>'
+```
+
+List programs for one student:
+
+```bash
+curl -k 'https://vertex.local/api/v1/students/10/programs?status=all&search=week&sort=week_start_date&direction=desc&page=1&per_page=25' \
+  -H 'Accept: application/json' \
+  -H 'Authorization: Bearer <token>'
+```
+
+Create appointment:
+
+```bash
+curl -k -X POST 'https://vertex.local/api/v1/appointments' \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <token>' \
+  -d '{"student_id":10,"starts_at":"2026-04-11 10:00:00","ends_at":"2026-04-11 11:00:00"}'
+```
 
 ## Security Headers
 

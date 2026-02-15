@@ -29,7 +29,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'Vertex API v1 provides authentication, profile management, workspace-based multi-tenant coaching flows (students, programs, appointments, calendar availability, WhatsApp deep-link helper), email verification, health checks, and rate-limited security-sensitive endpoints with a consistent JSON response contract.',
+        'description' => 'Vertex API v1 (TR/EN): authentication, profile management, workspace-based coaching flows (students, programs, appointments, calendar, WhatsApp helper), email verification, health checks, and rate-limited endpoints with a consistent JSON envelope (`success`, `message`, `data`, `request_id`, optional `meta`/`links`).',
     ],
 
     /*
@@ -39,7 +39,7 @@ return [
         /*
          * Define the title of the documentation's website. App name is used when this config is `null`.
          */
-        'title' => 'Vertex Laravel API Docs',
+        'title' => 'Vertex API Docs (Scramble)',
 
         /*
          * Define the theme of the documentation. Available options are `light`, `dark`, and `system`.
@@ -90,7 +90,8 @@ return [
      * ```
      */
     'servers' => [
-        'Local' => rtrim(env('APP_URL', 'http://localhost'), '/').'/api',
+        'Local HTTP' => rtrim(env('APP_URL', 'http://localhost'), '/').'/api',
+        'Local HTTPS' => rtrim(env('SCRAMBLE_LOCAL_HTTPS_URL', 'https://vertex.local'), '/').'/api',
     ],
 
     /**
