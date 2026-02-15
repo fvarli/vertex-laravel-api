@@ -17,6 +17,7 @@ class DemoUsersSeeder extends Seeder
                 'surname' => 'Admin',
                 'phone' => '+905551111111',
                 'is_active' => true,
+                'system_role' => 'workspace_user',
                 'email_verified_at' => now(),
                 'password' => Hash::make('password123'),
             ],
@@ -29,6 +30,20 @@ class DemoUsersSeeder extends Seeder
                 'surname' => 'Trainer',
                 'phone' => '+905552222222',
                 'is_active' => true,
+                'system_role' => 'workspace_user',
+                'email_verified_at' => now(),
+                'password' => Hash::make('password123'),
+            ],
+        );
+
+        User::query()->updateOrCreate(
+            ['email' => 'admin@vertex.local'],
+            [
+                'name' => 'Platform',
+                'surname' => 'Admin',
+                'phone' => '+905553333333',
+                'is_active' => true,
+                'system_role' => 'platform_admin',
                 'email_verified_at' => now(),
                 'password' => Hash::make('password123'),
             ],

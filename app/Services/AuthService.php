@@ -15,12 +15,13 @@ class AuthService
     public function register(array $data): array
     {
         $user = User::query()->create([
-            'name'     => $data['name'],
-            'surname'  => $data['surname'] ?? null,
-            'email'    => $data['email'],
-            'phone'    => $data['phone'] ?? null,
+            'name' => $data['name'],
+            'surname' => $data['surname'] ?? null,
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
             'password' => $data['password'],
             'is_active' => true,
+            'system_role' => 'workspace_user',
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;

@@ -12,6 +12,8 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 - Profile: me, update profile, change password, avatar upload/delete, account delete (soft delete)
 - Multi-workspace tenancy: active workspace context per user
 - Role-based scope: `owner_admin` and `trainer`
+- Identity model: single `users` table with `system_role` (`workspace_user` / `platform_admin`)
+- RBAC foundation: `roles`, `permissions`, and scoped pivots (`model_role`, `model_permission`)
 - Students: create, list, update, set status (`active` / `passive`)
 - Programs: weekly program management with ordered program items
 - Appointments: scheduling with overlap conflict protection
@@ -57,6 +59,9 @@ Demo login credentials:
   - password: `password123`
 - Trainer:
   - email: `trainer@vertex.local`
+  - password: `password123`
+- Platform Admin:
+  - email: `admin@vertex.local`
   - password: `password123`
 
 Both users are seeded with:

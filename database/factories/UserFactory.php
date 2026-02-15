@@ -30,6 +30,7 @@ class UserFactory extends Factory
             'phone' => fake()->phoneNumber(),
             'avatar' => null,
             'is_active' => true,
+            'system_role' => 'workspace_user',
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
@@ -81,5 +82,17 @@ class UserFactory extends Factory
     public function ownerAdmin(): static
     {
         return $this->verifiedActive();
+    }
+
+    /**
+     * Semantic state for platform admins.
+     */
+    public function platformAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => true,
+            'email_verified_at' => now(),
+            'system_role' => 'platform_admin',
+        ]);
     }
 }

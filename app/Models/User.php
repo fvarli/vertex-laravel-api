@@ -31,6 +31,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'avatar',
         'is_active',
+        'system_role',
         'active_workspace_id',
         'password',
     ];
@@ -74,6 +75,20 @@ class User extends Authenticatable implements MustVerifyEmail
     public function ownedWorkspaces(): HasMany
     {
         return $this->hasMany(Workspace::class, 'owner_user_id');
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'model_role')
+            ->withPivot(['workspace_id'])
+            ->withTimestamps();
+    }
+
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'model_permission')
+            ->withPivot(['workspace_id'])
+            ->withTimestamps();
     }
 
     public function sendPasswordResetNotification($token): void
