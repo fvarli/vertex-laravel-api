@@ -501,7 +501,7 @@ API responses include:
 php artisan test
 ```
 
-Current baseline: `111` tests passing (`430` assertions).
+Current baseline: `132` tests passing (`528` assertions).
 
 ## CI Pipeline
 
