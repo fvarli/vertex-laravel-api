@@ -30,7 +30,7 @@ class AuthController extends BaseController
         $result = $this->authService->register($request->validated());
 
         $this->apiLogService->info('User registered', $request, [
-            'user_id'    => $result['user']->id,
+            'user_id' => $result['user']->id,
             'user_email' => $result['user']->email,
         ]);
 
@@ -49,7 +49,7 @@ class AuthController extends BaseController
             $result = $this->authService->login($request->validated());
         } catch (AuthenticationException $e) {
             $this->apiLogService->warning('Login failed', $request, [
-                'email'  => $request->input('email'),
+                'email' => $request->input('email'),
                 'reason' => $e->getMessage(),
             ]);
 

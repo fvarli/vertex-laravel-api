@@ -3,9 +3,9 @@
 namespace Tests\Feature\Api\V1\Auth;
 
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use App\Notifications\ResetPasswordNotification;
 use Tests\TestCase;
 
 class ForgotPasswordTest extends TestCase

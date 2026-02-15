@@ -17,8 +17,10 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 - Students: create, list, update, set status (`active` / `passive`)
 - Programs: weekly program management with ordered program items
 - Appointments: scheduling with overlap conflict protection
+- Dashboard summary endpoint for KPI cards and today overview
 - Calendar availability endpoint for frontend schedule view
 - WhatsApp deep-link helper endpoint for student messaging
+- Domain audit trail for student/program/appointment mutations
 - Security middleware: request-id, forced JSON, security headers, locale
 - API logging: dedicated `apilog` channel with sensitive-data masking
 - Health endpoint with database/cache/queue checks
@@ -162,6 +164,7 @@ Authenticated (core):
 - `DELETE /api/v1/me`
 
 Authenticated (workspace/domain):
+- `GET /api/v1/dashboard/summary`
 - `GET /api/v1/me/workspaces`
 - `POST /api/v1/workspaces`
 - `POST /api/v1/workspaces/{workspace}/switch`
@@ -206,6 +209,7 @@ Authenticated (workspace/domain):
 | DELETE | `/api/v1/me/avatar` | Bearer token | `auth:sanctum,user.active` | `v1.profile.avatar.delete` |
 | DELETE | `/api/v1/me` | Bearer token | `auth:sanctum,user.active,throttle:delete-account` | `v1.profile.destroy` |
 | GET | `/api/v1/me/workspaces` | Bearer token | `auth:sanctum,user.active` | `v1.workspace.index` |
+| GET | `/api/v1/dashboard/summary` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.dashboard.summary` |
 | POST | `/api/v1/workspaces` | Bearer token | `auth:sanctum,user.active` | `v1.workspace.store` |
 | POST | `/api/v1/workspaces/{workspace}/switch` | Bearer token | `auth:sanctum,user.active` | `v1.workspace.switch` |
 | POST | `/api/v1/students` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.store` |
@@ -234,6 +238,7 @@ Authenticated (workspace/domain):
 - Program guard: one `active` program per student per `week_start_date`.
 - Program item guard: `day_of_week + order_no` must be unique inside a program payload.
 - Appointment guard: trainer and student overlap is blocked (`422 Unprocessable Entity`, `errors.code[0] = time_slot_conflict`).
+- Appointment idempotency guard: optional `Idempotency-Key` prevents duplicate create requests for the same actor/workspace.
 - WhatsApp link endpoint returns ready-to-open `wa.me` URL.
 
 ## Rate Limits
@@ -341,6 +346,28 @@ List endpoint query contract:
 - appointments: `status`, `trainer_id`, `student_id`, `from|to`, `date_from|date_to`
 - users: `search`, `sort` (`id`, `name`, `email`, `created_at`)
 
+Dashboard summary envelope example:
+
+```json
+{
+  "success": true,
+  "message": "Success",
+  "request_id": "d92861c5-5f30-4f3e-bf3a-3a4f053f8c5a",
+  "data": {
+    "date": "2026-02-15",
+    "students": { "active": 42, "passive": 8, "total": 50 },
+    "appointments": {
+      "today_total": 6,
+      "today_done": 2,
+      "today_planned": 3,
+      "today_cancelled": 1,
+      "upcoming_7d": 18
+    },
+    "programs": { "active_this_week": 21, "draft_this_week": 7 }
+  }
+}
+```
+
 ## Frontend Integration Quickstart
 
 React client flow after login:
@@ -419,6 +446,17 @@ curl -k -X POST 'https://vertex.local/api/v1/appointments' \
   -d '{"student_id":10,"starts_at":"2026-04-11 10:00:00","ends_at":"2026-04-11 11:00:00"}'
 ```
 
+Create appointment with idempotency:
+
+```bash
+curl -k -X POST 'https://vertex.local/api/v1/appointments' \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <token>' \
+  -H 'Idempotency-Key: appt-2026-04-11-1000-student10' \
+  -d '{"student_id":10,"starts_at":"2026-04-11 10:00:00","ends_at":"2026-04-11 11:00:00"}'
+```
+
 ## Security Headers
 
 API responses include:
@@ -455,6 +493,9 @@ Current baseline: `111` tests passing (`430` assertions).
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push/PR to `main`:
 - `php-tests`: install, audit, test
 - `code-style`: `./vendor/bin/pint --test --dirty`
+
+Recommended branch protection on `main`:
+- require `php-tests` and `code-style` to pass before merge
 
 ## Keeping README Current
 

@@ -69,5 +69,5 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Run Pint in test mode (changed files)
-        run: ./vendor/bin/pint --test --dirty
+      - name: Run Pint in test mode
+        run: ./vendor/bin/pint --test

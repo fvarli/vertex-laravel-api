@@ -10,12 +10,18 @@ use App\Http\Requests\Api\V1\Program\UpdateProgramStatusRequest;
 use App\Http\Resources\ProgramResource;
 use App\Models\Program;
 use App\Models\Student;
+use App\Services\DomainAuditService;
 use App\Services\ProgramService;
 use Illuminate\Http\JsonResponse;
 
 class ProgramController extends BaseController
 {
-    public function __construct(private readonly ProgramService $programService) {}
+    private const AUDIT_FIELDS = ['title', 'status', 'week_start_date', 'trainer_user_id', 'student_id'];
+
+    public function __construct(
+        private readonly ProgramService $programService,
+        private readonly DomainAuditService $auditService,
+    ) {}
 
     /**
      * List programs for a student in active workspace context.
@@ -59,6 +65,14 @@ class ProgramController extends BaseController
             data: $request->validated(),
         );
 
+        $this->auditService->record(
+            request: $request,
+            event: 'program.created',
+            auditable: $program,
+            after: $program->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
+
         return $this->sendResponse(new ProgramResource($program), __('api.program.created'), 201);
     }
 
@@ -79,7 +93,17 @@ class ProgramController extends BaseController
     {
         $this->authorize('update', $program);
 
+        $before = $program->toArray();
         $program = $this->programService->update($program, $request->validated());
+
+        $this->auditService->record(
+            request: $request,
+            event: 'program.updated',
+            auditable: $program,
+            before: $before,
+            after: $program->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
 
         return $this->sendResponse(new ProgramResource($program), __('api.program.updated'));
     }
@@ -91,7 +115,17 @@ class ProgramController extends BaseController
     {
         $this->authorize('setStatus', $program);
 
+        $before = $program->toArray();
         $program = $this->programService->updateStatus($program, $request->validated('status'));
+
+        $this->auditService->record(
+            request: $request,
+            event: 'program.status_updated',
+            auditable: $program,
+            before: $before,
+            after: $program->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
 
         return $this->sendResponse(new ProgramResource($program), __('api.program.status_updated'));
     }

@@ -10,12 +10,17 @@ use App\Http\Requests\Api\V1\Student\UpdateStudentStatusRequest;
 use App\Http\Resources\StudentResource;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\DomainAuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class StudentController extends BaseController
 {
+    private const AUDIT_FIELDS = ['full_name', 'phone', 'status', 'trainer_user_id'];
+
+    public function __construct(private readonly DomainAuditService $auditService) {}
+
     /**
      * List students in active workspace with role-based scope and filters.
      */
@@ -87,6 +92,14 @@ class StudentController extends BaseController
             'status' => Student::STATUS_ACTIVE,
         ]);
 
+        $this->auditService->record(
+            request: $request,
+            event: 'student.created',
+            auditable: $student,
+            after: $student->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
+
         return $this->sendResponse(new StudentResource($student), __('api.student.created'), 201);
     }
 
@@ -107,6 +120,7 @@ class StudentController extends BaseController
     {
         $this->authorize('update', $student);
 
+        $before = $student->toArray();
         $data = $request->validated();
         $workspaceRole = $request->attributes->get('workspace_role');
 
@@ -130,8 +144,18 @@ class StudentController extends BaseController
         }
 
         $student->update($data);
+        $freshStudent = $student->refresh();
 
-        return $this->sendResponse(new StudentResource($student->refresh()), __('api.student.updated'));
+        $this->auditService->record(
+            request: $request,
+            event: 'student.updated',
+            auditable: $freshStudent,
+            before: $before,
+            after: $freshStudent->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
+
+        return $this->sendResponse(new StudentResource($freshStudent), __('api.student.updated'));
     }
 
     /**
@@ -141,8 +165,19 @@ class StudentController extends BaseController
     {
         $this->authorize('setStatus', $student);
 
+        $before = $student->toArray();
         $student->update(['status' => $request->validated('status')]);
+        $freshStudent = $student->refresh();
 
-        return $this->sendResponse(new StudentResource($student->refresh()), __('api.student.status_updated'));
+        $this->auditService->record(
+            request: $request,
+            event: 'student.status_updated',
+            auditable: $freshStudent,
+            before: $before,
+            after: $freshStudent->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
+
+        return $this->sendResponse(new StudentResource($freshStudent), __('api.student.status_updated'));
     }
 }

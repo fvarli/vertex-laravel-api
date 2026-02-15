@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApiLogMiddleware;
+use App\Http\Middleware\EnforceIdempotencyForAppointments;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureWorkspaceContext;
 use App\Http\Middleware\ForceJsonResponse;
@@ -40,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'user.active' => EnsureUserIsActive::class,
             'api.log' => ApiLogMiddleware::class,
             'workspace.context' => EnsureWorkspaceContext::class,
+            'idempotent.appointments' => EnforceIdempotencyForAppointments::class,
         ]);
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('api/*')) {

@@ -13,12 +13,18 @@ use App\Models\Appointment;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\AppointmentService;
+use App\Services\DomainAuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends BaseController
 {
-    public function __construct(private readonly AppointmentService $appointmentService) {}
+    private const AUDIT_FIELDS = ['student_id', 'trainer_user_id', 'starts_at', 'ends_at', 'status', 'location'];
+
+    public function __construct(
+        private readonly AppointmentService $appointmentService,
+        private readonly DomainAuditService $auditService,
+    ) {}
 
     /**
      * List appointments in active workspace with date and status filters.
@@ -122,6 +128,14 @@ class AppointmentController extends BaseController
             ], 422);
         }
 
+        $this->auditService->record(
+            request: $request,
+            event: 'appointment.created',
+            auditable: $appointment,
+            after: $appointment->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
+
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.created'), 201);
     }
 
@@ -142,6 +156,7 @@ class AppointmentController extends BaseController
     {
         $this->authorize('update', $appointment);
 
+        $before = $appointment->toArray();
         $data = $request->validated();
         $workspaceRole = $request->attributes->get('workspace_role');
 
@@ -193,6 +208,15 @@ class AppointmentController extends BaseController
             ], 422);
         }
 
+        $this->auditService->record(
+            request: $request,
+            event: 'appointment.updated',
+            auditable: $appointment,
+            before: $before,
+            after: $appointment->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
+
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.updated'));
     }
 
@@ -203,7 +227,17 @@ class AppointmentController extends BaseController
     {
         $this->authorize('setStatus', $appointment);
 
+        $before = $appointment->toArray();
         $appointment = $this->appointmentService->updateStatus($appointment, $request->validated('status'));
+
+        $this->auditService->record(
+            request: $request,
+            event: 'appointment.status_updated',
+            auditable: $appointment,
+            before: $before,
+            after: $appointment->toArray(),
+            allowedFields: self::AUDIT_FIELDS,
+        );
 
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.status_updated'));
     }

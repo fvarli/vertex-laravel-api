@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AppointmentController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CalendarController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ProfileController;
@@ -100,12 +101,13 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
 
         // Appointment and calendar routes
         Route::prefix('appointments')->name('v1.appointments.')->controller(AppointmentController::class)->group(function () {
-            Route::post('/', 'store')->name('store');
+            Route::post('/', 'store')->middleware('idempotent.appointments')->name('store');
             Route::get('/', 'index')->name('index');
             Route::get('/{appointment}', 'show')->name('show');
             Route::put('/{appointment}', 'update')->name('update');
             Route::patch('/{appointment}/status', 'updateStatus')->name('status');
         });
+        Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->name('v1.dashboard.summary');
         Route::get('/calendar', [CalendarController::class, 'availability'])->name('v1.calendar.index');
         Route::get('/calendar/availability', [CalendarController::class, 'availability'])->name('v1.calendar.availability');
 
