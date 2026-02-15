@@ -31,7 +31,7 @@ class StudentController extends BaseController
         $workspaceRole = $request->attributes->get('workspace_role');
         $user = $request->user();
         $perPage = (int) ($validated['per_page'] ?? 15);
-        $status = (string) ($validated['status'] ?? 'active');
+        $status = (string) ($validated['status'] ?? 'all');
         $search = trim((string) ($validated['search'] ?? ''));
         $sort = (string) ($validated['sort'] ?? 'id');
         $direction = (string) ($validated['direction'] ?? 'desc');
