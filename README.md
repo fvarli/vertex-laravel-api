@@ -165,6 +165,9 @@ Authenticated (core):
 
 Authenticated (workspace/domain):
 - `GET /api/v1/dashboard/summary`
+- `GET /api/v1/reports/appointments`
+- `GET /api/v1/reports/students`
+- `GET /api/v1/reports/programs`
 - `GET /api/v1/me/workspaces`
 - `POST /api/v1/workspaces`
 - `POST /api/v1/workspaces/{workspace}/switch`
@@ -210,6 +213,9 @@ Authenticated (workspace/domain):
 | DELETE | `/api/v1/me` | Bearer token | `auth:sanctum,user.active,throttle:delete-account` | `v1.profile.destroy` |
 | GET | `/api/v1/me/workspaces` | Bearer token | `auth:sanctum,user.active` | `v1.workspace.index` |
 | GET | `/api/v1/dashboard/summary` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.dashboard.summary` |
+| GET | `/api/v1/reports/appointments` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.appointments` |
+| GET | `/api/v1/reports/students` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.students` |
+| GET | `/api/v1/reports/programs` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.programs` |
 | POST | `/api/v1/workspaces` | Bearer token | `auth:sanctum,user.active` | `v1.workspace.store` |
 | POST | `/api/v1/workspaces/{workspace}/switch` | Bearer token | `auth:sanctum,user.active` | `v1.workspace.switch` |
 | POST | `/api/v1/students` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.store` |
@@ -345,6 +351,7 @@ List endpoint query contract:
 - programs: `status` (`draft`, `active`, `archived`, `all`)
 - appointments: `status`, `trainer_id`, `student_id`, `from|to`, `date_from|date_to`
 - users: `search`, `sort` (`id`, `name`, `email`, `created_at`)
+- reporting: `date_from`, `date_to`, `group_by` (`day`, `week`, `month`), `trainer_id` (owner_admin only)
 
 Dashboard summary envelope example:
 
@@ -432,6 +439,14 @@ List programs for one student:
 
 ```bash
 curl -k 'https://vertex.local/api/v1/students/10/programs?status=all&search=week&sort=week_start_date&direction=desc&page=1&per_page=25' \
+  -H 'Accept: application/json' \
+  -H 'Authorization: Bearer <token>'
+```
+
+Appointments report example:
+
+```bash
+curl -k 'https://vertex.local/api/v1/reports/appointments?date_from=2026-06-01&date_to=2026-06-30&group_by=day' \
   -H 'Accept: application/json' \
   -H 'Authorization: Bearer <token>'
 ```

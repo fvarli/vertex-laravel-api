@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProgramController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WhatsAppController;
@@ -108,6 +109,11 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             Route::patch('/{appointment}/status', 'updateStatus')->name('status');
         });
         Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->name('v1.dashboard.summary');
+        Route::prefix('reports')->name('v1.reports.')->controller(ReportController::class)->group(function () {
+            Route::get('/appointments', 'appointments')->name('appointments');
+            Route::get('/students', 'students')->name('students');
+            Route::get('/programs', 'programs')->name('programs');
+        });
         Route::get('/calendar', [CalendarController::class, 'availability'])->name('v1.calendar.index');
         Route::get('/calendar/availability', [CalendarController::class, 'availability'])->name('v1.calendar.availability');
 

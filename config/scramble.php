@@ -29,7 +29,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'Vertex API v1 (TR/EN): authentication, profile/workspace management, dashboard summary KPIs, coaching flows (students, programs, appointments, calendar, WhatsApp helper), idempotent appointment create support (`Idempotency-Key`), audit trail writes, and a consistent JSON envelope (`success`, `message`, `data`, `request_id`, optional `meta`/`links`).',
+        'description' => 'Vertex API v1 (TR/EN): authentication, profile/workspace management, dashboard KPIs + reporting endpoints, coaching flows (students, programs, appointments, calendar, WhatsApp helper), idempotent appointment create support (`Idempotency-Key`), audit trail writes, and a consistent JSON envelope (`success`, `message`, `data`, `request_id`, optional `meta`/`links`).',
     ],
 
     /*
