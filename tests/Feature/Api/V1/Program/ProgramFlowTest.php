@@ -120,4 +120,42 @@ class ProgramFlowTest extends TestCase
         $response->assertStatus(403)
             ->assertJsonPath('success', false);
     }
+
+    public function test_programs_index_supports_search_sort_direction_and_status_contract(): void
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $workspace->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $owner->update(['active_workspace_id' => $workspace->id]);
+
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $owner->id,
+        ]);
+
+        Program::factory()->create([
+            'workspace_id' => $workspace->id,
+            'student_id' => $student->id,
+            'trainer_user_id' => $owner->id,
+            'title' => 'Mobility Week',
+            'status' => Program::STATUS_DRAFT,
+        ]);
+
+        $target = Program::factory()->create([
+            'workspace_id' => $workspace->id,
+            'student_id' => $student->id,
+            'trainer_user_id' => $owner->id,
+            'title' => 'Strength Week',
+            'status' => Program::STATUS_ACTIVE,
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->getJson("/api/v1/students/{$student->id}/programs?search=strength&status=active&sort=title&direction=asc");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.data.0.id', $target->id)
+            ->assertJsonPath('meta.total', 1);
+    }
 }

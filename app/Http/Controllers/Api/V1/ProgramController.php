@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Requests\Api\V1\Program\ListProgramRequest;
 use App\Http\Requests\Api\V1\Program\StoreProgramRequest;
 use App\Http\Requests\Api\V1\Program\UpdateProgramRequest;
 use App\Http\Requests\Api\V1\Program\UpdateProgramStatusRequest;
@@ -11,7 +12,6 @@ use App\Models\Program;
 use App\Models\Student;
 use App\Services\ProgramService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class ProgramController extends BaseController
 {
@@ -20,17 +20,30 @@ class ProgramController extends BaseController
     /**
      * List programs for a student in active workspace context.
      */
-    public function index(Request $request, Student $student): JsonResponse
+    public function index(ListProgramRequest $request, Student $student): JsonResponse
     {
         $this->authorize('view', $student);
+        $validated = $request->validated();
+        $perPage = (int) ($validated['per_page'] ?? 100);
+        $search = trim((string) ($validated['search'] ?? ''));
+        $status = (string) ($validated['status'] ?? 'all');
+        $sort = (string) ($validated['sort'] ?? 'id');
+        $direction = (string) ($validated['direction'] ?? 'desc');
 
         $programs = Program::query()
             ->with('items')
             ->where('student_id', $student->id)
-            ->latest('id')
-            ->get();
+            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('title', 'like', "%{$search}%")
+                        ->orWhere('goal', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy($sort, $direction)
+            ->paginate($perPage);
 
-        return $this->sendResponse(ProgramResource::collection($programs));
+        return $this->sendResponse(ProgramResource::collection($programs)->response()->getData(true));
     }
 
     /**

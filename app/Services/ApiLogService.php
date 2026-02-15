@@ -23,7 +23,9 @@ class ApiLogService
             'ip'         => $request->ip(),
             'method'     => $request->method(),
             'url'        => $request->fullUrl(),
+            'route_name' => $request->route()?->getName(),
             'user_id'    => $request->user()?->id,
+            'workspace_id' => $request->attributes->get('workspace_id'),
             'user_agent' => $request->userAgent(),
         ], $extra);
     }

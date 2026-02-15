@@ -336,6 +336,7 @@ Calendar availability envelope example:
 List endpoint query contract:
 - shared: `page`, `per_page`, `search`, `sort`, `direction`
 - students: `status` (`active`, `passive`, `all`)
+- programs: `status` (`draft`, `active`, `archived`, `all`)
 - appointments: `status`, `trainer_id`, `student_id`, `from|to`, `date_from|date_to`
 - users: `search`, `sort` (`id`, `name`, `email`, `created_at`)
 
