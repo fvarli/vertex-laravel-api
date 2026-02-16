@@ -118,14 +118,14 @@ class AppointmentSeriesController extends BaseController
 
     public function show(AppointmentSeries $series): JsonResponse
     {
-        $this->authorizeSeriesAccess($series);
+        $this->authorize('view', $series);
 
         return $this->sendResponse(new AppointmentSeriesResource($series));
     }
 
     public function update(UpdateAppointmentSeriesRequest $request, AppointmentSeries $series): JsonResponse
     {
-        $this->authorizeSeriesAccess($series);
+        $this->authorize('update', $series);
         $before = $series->toArray();
 
         $result = $this->appointmentSeriesService->updateSeries(
@@ -153,7 +153,7 @@ class AppointmentSeriesController extends BaseController
 
     public function updateStatus(UpdateAppointmentSeriesStatusRequest $request, AppointmentSeries $series): JsonResponse
     {
-        $this->authorizeSeriesAccess($series);
+        $this->authorize('setStatus', $series);
         $before = $series->toArray();
 
         $series->update([
@@ -172,20 +172,5 @@ class AppointmentSeriesController extends BaseController
         );
 
         return $this->sendResponse(new AppointmentSeriesResource($series), __('api.appointment.series_status_updated'));
-    }
-
-    private function authorizeSeriesAccess(AppointmentSeries $series): void
-    {
-        $workspaceId = (int) request()->attributes->get('workspace_id');
-        $workspaceRole = (string) request()->attributes->get('workspace_role');
-        $user = request()->user();
-
-        if ($series->workspace_id !== $workspaceId) {
-            abort(403, __('api.forbidden'));
-        }
-
-        if ($workspaceRole !== 'owner_admin' && (int) $series->trainer_user_id !== (int) $user->id) {
-            abort(403, __('api.forbidden'));
-        }
     }
 }

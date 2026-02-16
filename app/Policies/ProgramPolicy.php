@@ -27,6 +27,10 @@ class ProgramPolicy
 
     private function canAccess(User $user, int $workspaceId, int $trainerId): bool
     {
+        if ((int) $user->active_workspace_id !== $workspaceId) {
+            return false;
+        }
+
         $role = $this->workspaceContextService->getRole($user, $workspaceId);
 
         if (! $role) {

@@ -40,8 +40,16 @@ Expected:
 Expected:
 - Past due `pending/ready` reminders transition to `missed`.
 
+## 7) RBAC + Workspace Isolation
+1. Login as trainer user in workspace A.
+2. Attempt to read/update resources that belong to another trainer.
+3. Attempt to read a resource from workspace B while active workspace is A.
+Expected:
+- API returns `403`.
+- No cross-trainer or cross-workspace data leak.
+- `request_id` is returned for traceability.
+
 ## Failure Handling
 - If any step fails, capture `request_id`, endpoint, and payload.
 - Check `storage/logs` and `apilog` channel entries.
 - Stop release sign-off until root cause is documented.
-

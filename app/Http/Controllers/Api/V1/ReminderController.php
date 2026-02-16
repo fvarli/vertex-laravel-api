@@ -51,7 +51,7 @@ class ReminderController extends BaseController
 
     public function open(AppointmentReminder $reminder): JsonResponse
     {
-        $this->authorizeReminderAccess($reminder);
+        $this->authorize('update', $reminder);
 
         $before = $reminder->toArray();
         $reminder->update([
@@ -76,7 +76,7 @@ class ReminderController extends BaseController
 
     public function markSent(AppointmentReminder $reminder): JsonResponse
     {
-        $this->authorizeReminderAccess($reminder);
+        $this->authorize('update', $reminder);
 
         $before = $reminder->toArray();
         $now = now()->utc();
@@ -112,7 +112,7 @@ class ReminderController extends BaseController
 
     public function cancel(AppointmentReminder $reminder): JsonResponse
     {
-        $this->authorizeReminderAccess($reminder);
+        $this->authorize('update', $reminder);
 
         $before = $reminder->toArray();
         $reminder->update(['status' => AppointmentReminder::STATUS_CANCELLED]);
@@ -128,21 +128,5 @@ class ReminderController extends BaseController
         );
 
         return $this->sendResponse(new AppointmentReminderResource($reminder), __('api.reminder.cancelled'));
-    }
-
-    private function authorizeReminderAccess(AppointmentReminder $reminder): void
-    {
-        $workspaceId = (int) request()->attributes->get('workspace_id');
-        $workspaceRole = (string) request()->attributes->get('workspace_role');
-        $user = request()->user();
-        $appointment = $reminder->appointment()->first();
-
-        if (! $appointment || (int) $appointment->workspace_id !== $workspaceId) {
-            abort(403, __('api.forbidden'));
-        }
-
-        if ($workspaceRole !== 'owner_admin' && (int) $appointment->trainer_user_id !== (int) $user->id) {
-            abort(403, __('api.forbidden'));
-        }
     }
 }

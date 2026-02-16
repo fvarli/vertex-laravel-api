@@ -2,27 +2,27 @@
 
 namespace App\Policies;
 
-use App\Models\Appointment;
+use App\Models\AppointmentSeries;
 use App\Models\User;
 use App\Services\WorkspaceContextService;
 
-class AppointmentPolicy
+class AppointmentSeriesPolicy
 {
     public function __construct(private readonly WorkspaceContextService $workspaceContextService) {}
 
-    public function view(User $user, Appointment $appointment): bool
+    public function view(User $user, AppointmentSeries $series): bool
     {
-        return $this->canAccess($user, $appointment->workspace_id, $appointment->trainer_user_id);
+        return $this->canAccess($user, $series->workspace_id, $series->trainer_user_id);
     }
 
-    public function update(User $user, Appointment $appointment): bool
+    public function update(User $user, AppointmentSeries $series): bool
     {
-        return $this->canAccess($user, $appointment->workspace_id, $appointment->trainer_user_id);
+        return $this->canAccess($user, $series->workspace_id, $series->trainer_user_id);
     }
 
-    public function setStatus(User $user, Appointment $appointment): bool
+    public function setStatus(User $user, AppointmentSeries $series): bool
     {
-        return $this->canAccess($user, $appointment->workspace_id, $appointment->trainer_user_id);
+        return $this->canAccess($user, $series->workspace_id, $series->trainer_user_id);
     }
 
     private function canAccess(User $user, int $workspaceId, int $trainerId): bool

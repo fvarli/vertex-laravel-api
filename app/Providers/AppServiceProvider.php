@@ -3,9 +3,13 @@
 namespace App\Providers;
 
 use App\Models\Appointment;
+use App\Models\AppointmentReminder;
+use App\Models\AppointmentSeries;
 use App\Models\Program;
 use App\Models\Student;
 use App\Policies\AppointmentPolicy;
+use App\Policies\AppointmentReminderPolicy;
+use App\Policies\AppointmentSeriesPolicy;
 use App\Policies\ProgramPolicy;
 use App\Policies\StudentPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -32,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Student::class, StudentPolicy::class);
         Gate::policy(Program::class, ProgramPolicy::class);
         Gate::policy(Appointment::class, AppointmentPolicy::class);
+        Gate::policy(AppointmentSeries::class, AppointmentSeriesPolicy::class);
+        Gate::policy(AppointmentReminder::class, AppointmentReminderPolicy::class);
 
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());

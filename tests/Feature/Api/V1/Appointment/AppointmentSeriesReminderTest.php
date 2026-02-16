@@ -88,6 +88,68 @@ class AppointmentSeriesReminderTest extends TestCase
         $this->assertSame(Appointment::WHATSAPP_STATUS_SENT, $appointment->whatsapp_status);
     }
 
+    public function test_trainer_cannot_mark_other_trainers_reminder_as_sent(): void
+    {
+        [$owner, $trainerA, $workspace] = $this->seedWorkspace();
+        $trainerB = User::factory()->create();
+        $workspace->users()->attach($trainerB->id, ['role' => 'trainer', 'is_active' => true]);
+        $trainerB->update(['active_workspace_id' => $workspace->id]);
+
+        $student = \App\Models\Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainerB->id,
+        ]);
+
+        $appointment = Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainerB->id,
+            'student_id' => $student->id,
+            'starts_at' => now()->addDay(),
+            'ends_at' => now()->addDay()->addHour(),
+        ]);
+
+        $reminder = AppointmentReminder::factory()->create([
+            'workspace_id' => $workspace->id,
+            'appointment_id' => $appointment->id,
+            'status' => AppointmentReminder::STATUS_PENDING,
+            'scheduled_for' => now()->addHours(4),
+        ]);
+
+        Sanctum::actingAs($trainerA);
+
+        $response = $this->patchJson("/api/v1/reminders/{$reminder->id}/mark-sent");
+
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false);
+    }
+
+    public function test_trainer_cannot_access_series_from_another_workspace(): void
+    {
+        [$owner, $trainer, $workspaceA] = $this->seedWorkspace();
+        $workspaceB = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $workspaceB->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $workspaceB->users()->attach($trainer->id, ['role' => 'trainer', 'is_active' => true]);
+
+        $studentInB = \App\Models\Student::factory()->create([
+            'workspace_id' => $workspaceB->id,
+            'trainer_user_id' => $trainer->id,
+        ]);
+
+        $series = \App\Models\AppointmentSeries::factory()->create([
+            'workspace_id' => $workspaceB->id,
+            'trainer_user_id' => $trainer->id,
+            'student_id' => $studentInB->id,
+        ]);
+
+        $trainer->update(['active_workspace_id' => $workspaceA->id]);
+        Sanctum::actingAs($trainer);
+
+        $response = $this->getJson("/api/v1/appointments/series/{$series->id}");
+
+        $response->assertStatus(403)
+            ->assertJsonPath('success', false);
+    }
+
     /**
      * @return array{0: User, 1: User, 2: Workspace}
      */

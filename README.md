@@ -110,6 +110,7 @@ Protected routes use Sanctum bearer tokens.
 
 - `owner_admin`: workspace-wide access to trainer-assigned records.
 - `trainer`: access limited to own assigned students/programs/appointments.
+- Resource policies require `user.active_workspace_id` to match resource workspace.
 
 ## Security Model
 
