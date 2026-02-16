@@ -45,7 +45,7 @@ class UserListTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $response = $this->getJson($this->endpoint . '?per_page=3');
+        $response = $this->getJson($this->endpoint.'?per_page=3');
 
         $response->assertStatus(200);
 
@@ -74,7 +74,7 @@ class UserListTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $response = $this->getJson($this->endpoint . '?per_page=100');
+        $response = $this->getJson($this->endpoint.'?per_page=100');
 
         $response->assertStatus(200);
 
@@ -88,7 +88,7 @@ class UserListTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $response = $this->getJson($this->endpoint . '?per_page=0');
+        $response = $this->getJson($this->endpoint.'?per_page=0');
 
         $response->assertStatus(200);
 
@@ -102,7 +102,7 @@ class UserListTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $response = $this->getJson($this->endpoint . '?per_page=5&page=2');
+        $response = $this->getJson($this->endpoint.'?per_page=5&page=2');
 
         $response->assertStatus(200);
 

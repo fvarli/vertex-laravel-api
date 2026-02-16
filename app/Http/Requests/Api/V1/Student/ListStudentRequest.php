@@ -25,4 +25,3 @@ class ListStudentRequest extends FormRequest
         ];
     }
 }
-

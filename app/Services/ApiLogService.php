@@ -20,11 +20,11 @@ class ApiLogService
     {
         return array_merge([
             'request_id' => $request->attributes->get('request_id'),
-            'ip'         => $request->ip(),
-            'method'     => $request->method(),
-            'url'        => $request->fullUrl(),
+            'ip' => $request->ip(),
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
             'route_name' => $request->route()?->getName(),
-            'user_id'    => $request->user()?->id,
+            'user_id' => $request->user()?->id,
             'workspace_id' => $request->attributes->get('workspace_id'),
             'user_agent' => $request->userAgent(),
         ], $extra);
@@ -37,9 +37,9 @@ class ApiLogService
     private function store(string $level, string $message, Request $request, array $extra = []): void
     {
         $request->attributes->set('api_log', [
-            'level'   => $level,
+            'level' => $level,
             'message' => $message,
-            'extra'   => $extra,
+            'extra' => $extra,
         ]);
     }
 
@@ -52,18 +52,18 @@ class ApiLogService
         $stored = $request->attributes->get('api_log');
 
         if ($stored) {
-            $level   = $stored['level'];
+            $level = $stored['level'];
             $message = $stored['message'];
-            $extra   = array_merge($stored['extra'], $responseData);
+            $extra = array_merge($stored['extra'], $responseData);
         } else {
             $statusCode = $responseData['status_code'] ?? 200;
             $level = match (true) {
                 $statusCode >= 500 => 'error',
                 $statusCode >= 400 => 'warning',
-                default            => 'info',
+                default => 'info',
             };
             $message = 'API Request Completed';
-            $extra   = $responseData;
+            $extra = $responseData;
         }
 
         $context = $this->maskContext($this->buildContext($request, $extra));
@@ -77,6 +77,7 @@ class ApiLogService
         foreach ($context as $key => $value) {
             if (is_array($value)) {
                 $masked[$key] = $this->maskContext($value);
+
                 continue;
             }
 
@@ -103,19 +104,19 @@ class ApiLogService
 
         [$local, $domain] = $parts;
 
-        $maskedLocal = mb_substr($local, 0, min(2, mb_strlen($local))) . '***';
+        $maskedLocal = mb_substr($local, 0, min(2, mb_strlen($local))).'***';
 
         $dotPos = strrpos($domain, '.');
         if ($dotPos === false) {
-            return $maskedLocal . '@***';
+            return $maskedLocal.'@***';
         }
 
         $domainName = substr($domain, 0, $dotPos);
         $tld = substr($domain, $dotPos + 1);
 
-        $maskedDomain = mb_substr($domainName, 0, min(2, mb_strlen($domainName))) . '***.' . $tld;
+        $maskedDomain = mb_substr($domainName, 0, min(2, mb_strlen($domainName))).'***.'.$tld;
 
-        return $maskedLocal . '@' . $maskedDomain;
+        return $maskedLocal.'@'.$maskedDomain;
     }
 
     private function maskPhone(string $value): string
@@ -125,7 +126,7 @@ class ApiLogService
             return $value;
         }
 
-        return str_repeat('*', $len - 4) . mb_substr($value, -4);
+        return str_repeat('*', $len - 4).mb_substr($value, -4);
     }
 
     public function emergency(string $message, Request $request, array $extra = []): void

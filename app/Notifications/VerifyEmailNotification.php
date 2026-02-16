@@ -44,6 +44,6 @@ class VerifyEmailNotification extends Notification
         $parsedUrl = parse_url($temporarySignedUrl);
         parse_str($parsedUrl['query'] ?? '', $queryParams);
 
-        return config('app.frontend_url') . '/verify-email?url=' . urlencode($temporarySignedUrl);
+        return config('app.frontend_url').'/verify-email?url='.urlencode($temporarySignedUrl);
     }
 }
