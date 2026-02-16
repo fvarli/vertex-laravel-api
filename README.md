@@ -538,7 +538,26 @@ API responses include:
 php artisan test
 ```
 
-Current baseline: `132` tests passing (`528` assertions).
+Current baseline: `136` tests passing (`553` assertions).
+
+## Release Ops
+
+- Release docs:
+  - `CHANGELOG.md`
+  - `docs/release-checklist.md`
+  - `docs/smoke-qa.md`
+- Tagging convention:
+  - semantic tags (example: `v0.3.0`)
+  - tag after backend+frontend `main` branches are both green
+- Reminder scheduler requirement:
+  - keep `php artisan schedule:run` active via cron/system timer
+  - reminder missed-state upkeep is handled by `reminders:mark-missed`
+
+## Known Limitations
+
+- WhatsApp provider integration is not automatic in this release.
+- Reminder queue uses hybrid flow (manual open + manual sent confirmation).
+- Provider-side delivery receipts are not available in this release.
 
 ## CI Pipeline
 
