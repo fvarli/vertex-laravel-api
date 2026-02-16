@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Program;
+use App\Models\ProgramTemplate;
 use App\Models\Student;
 use Illuminate\Validation\ValidationException;
 
@@ -74,12 +75,157 @@ class ProgramService
         return $program->refresh()->load(['student', 'trainer', 'items']);
     }
 
+    public function createTemplate(int $workspaceId, int $trainerUserId, array $data): ProgramTemplate
+    {
+        $name = trim((string) $data['name']);
+
+        $nameExists = ProgramTemplate::query()
+            ->where('workspace_id', $workspaceId)
+            ->where('trainer_user_id', $trainerUserId)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->exists();
+
+        if ($nameExists) {
+            throw ValidationException::withMessages([
+                'name' => [__('validation.unique', ['attribute' => 'name'])],
+            ]);
+        }
+
+        $template = ProgramTemplate::query()->create([
+            'workspace_id' => $workspaceId,
+            'trainer_user_id' => $trainerUserId,
+            'name' => $name,
+            'title' => trim((string) $data['title']),
+            'goal' => $data['goal'] ?? null,
+        ]);
+
+        $this->syncTemplateItems($template, $data['items'] ?? []);
+
+        return $template->load('items');
+    }
+
+    public function updateTemplate(ProgramTemplate $template, array $data): ProgramTemplate
+    {
+        if (array_key_exists('name', $data)) {
+            $targetName = trim((string) $data['name']);
+            $nameExists = ProgramTemplate::query()
+                ->where('workspace_id', $template->workspace_id)
+                ->where('trainer_user_id', $template->trainer_user_id)
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($targetName)])
+                ->whereKeyNot($template->id)
+                ->exists();
+
+            if ($nameExists) {
+                throw ValidationException::withMessages([
+                    'name' => [__('validation.unique', ['attribute' => 'name'])],
+                ]);
+            }
+        }
+
+        $template->update([
+            'name' => array_key_exists('name', $data) ? trim((string) $data['name']) : $template->name,
+            'title' => $data['title'] ?? $template->title,
+            'goal' => array_key_exists('goal', $data) ? $data['goal'] : $template->goal,
+        ]);
+
+        if (array_key_exists('items', $data)) {
+            $this->syncTemplateItems($template, $data['items'] ?? []);
+        }
+
+        return $template->refresh()->load('items');
+    }
+
+    public function createFromTemplate(Student $student, int $trainerUserId, ProgramTemplate $template, array $data): Program
+    {
+        $payload = [
+            'title' => trim((string) ($data['title'] ?? $template->title)),
+            'goal' => array_key_exists('goal', $data) ? $data['goal'] : $template->goal,
+            'week_start_date' => $data['week_start_date'],
+            'status' => $data['status'] ?? Program::STATUS_DRAFT,
+            'items' => $template->items
+                ->sortBy(fn ($item) => sprintf('%d-%04d', $item->day_of_week, $item->order_no))
+                ->values()
+                ->map(function ($item) {
+                    return [
+                        'day_of_week' => $item->day_of_week,
+                        'order_no' => $item->order_no,
+                        'exercise' => $item->exercise,
+                        'sets' => $item->sets,
+                        'reps' => $item->reps,
+                        'rest_seconds' => $item->rest_seconds,
+                        'notes' => $item->notes,
+                    ];
+                })
+                ->all(),
+        ];
+
+        return $this->create($student, $trainerUserId, $payload);
+    }
+
+    public function copyWeek(Student $student, int $trainerUserId, array $data): Program
+    {
+        $sourceWeek = (string) $data['source_week_start_date'];
+        $targetWeek = (string) $data['target_week_start_date'];
+
+        $sourceProgram = Program::query()
+            ->with('items')
+            ->where('student_id', $student->id)
+            ->whereDate('week_start_date', $sourceWeek)
+            ->orderByDesc('updated_at')
+            ->first();
+
+        if (! $sourceProgram) {
+            throw ValidationException::withMessages([
+                'source_week_start_date' => [__('api.program.copy_source_missing')],
+            ]);
+        }
+
+        return $this->create($student, $trainerUserId, [
+            'title' => $sourceProgram->title,
+            'goal' => $sourceProgram->goal,
+            'week_start_date' => $targetWeek,
+            'status' => $data['status'] ?? Program::STATUS_DRAFT,
+            'items' => $sourceProgram->items
+                ->sortBy(fn ($item) => sprintf('%d-%04d', $item->day_of_week, $item->order_no))
+                ->values()
+                ->map(function ($item) {
+                    return [
+                        'day_of_week' => $item->day_of_week,
+                        'order_no' => $item->order_no,
+                        'exercise' => $item->exercise,
+                        'sets' => $item->sets,
+                        'reps' => $item->reps,
+                        'rest_seconds' => $item->rest_seconds,
+                        'notes' => $item->notes,
+                    ];
+                })
+                ->all(),
+        ]);
+    }
+
     private function syncItems(Program $program, array $items): void
     {
         $program->items()->delete();
 
         foreach ($items as $item) {
             $program->items()->create([
+                'day_of_week' => $item['day_of_week'],
+                'order_no' => $item['order_no'],
+                'exercise' => trim($item['exercise']),
+                'sets' => $item['sets'] ?? null,
+                'reps' => $item['reps'] ?? null,
+                'rest_seconds' => $item['rest_seconds'] ?? null,
+                'notes' => $item['notes'] ?? null,
+            ]);
+        }
+    }
+
+    private function syncTemplateItems(ProgramTemplate $template, array $items): void
+    {
+        $template->items()->delete();
+
+        foreach ($items as $item) {
+            $template->items()->create([
                 'day_of_week' => $item['day_of_week'],
                 'order_no' => $item['order_no'],
                 'exercise' => trim($item['exercise']),

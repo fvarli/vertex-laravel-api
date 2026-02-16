@@ -39,6 +39,8 @@ class AuditLogWriteTest extends TestCase
             'workspace_id' => $workspace->id,
             'student_id' => $student->id,
             'trainer_user_id' => $owner->id,
+            'starts_at' => now()->subHour(),
+            'ends_at' => now(),
             'status' => Appointment::STATUS_PLANNED,
         ]);
 

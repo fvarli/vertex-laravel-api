@@ -21,15 +21,17 @@
 - [ ] `php artisan up` (if used).
 
 ## Post-deploy verification
-- [ ] `php artisan route:list --path=api/v1` contains series/reminders endpoints.
+- [ ] `php artisan route:list --path=api/v1` contains templates/timeline/copy-week/series/reminders endpoints.
 - [ ] Health check endpoint responds `200`.
 - [ ] Login + workspace switch works.
+- [ ] Program template create + from-template + copy-week endpoints work.
+- [ ] Student timeline endpoint returns events.
 - [ ] Recurring series create works.
 - [ ] Reminder list/open/mark-sent/cancel works.
+- [ ] Attendance transition guards return expected `422` on invalid transitions.
 - [ ] API logs show no unexpected 5xx spike.
 
 ## Rollback
 - [ ] If migration rollback needed: `php artisan migrate:rollback --step=1` (only if safe).
 - [ ] Re-deploy previous image/revision.
 - [ ] Re-run smoke checks.
-

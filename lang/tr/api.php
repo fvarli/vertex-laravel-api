@@ -77,6 +77,11 @@ return [
         'status_updated' => 'Program durumu başarıyla güncellendi.',
         'active_exists_for_week' => 'Bu öğrenci ve hafta için zaten aktif bir program var.',
         'duplicate_day_order' => 'Program öğeleri aynı day_of_week ve order_no değerini paylaşamaz.',
+        'template_created' => 'Program şablonu başarıyla oluşturuldu.',
+        'template_updated' => 'Program şablonu başarıyla güncellendi.',
+        'template_deleted' => 'Program şablonu başarıyla silindi.',
+        'copied_week' => 'Program hedef haftaya başarıyla kopyalandı.',
+        'copy_source_missing' => 'Seçilen kaynak hafta için program bulunamadı.',
     ],
 
     // Appointment
@@ -89,6 +94,8 @@ return [
         'series_updated' => 'Randevu serisi başarıyla güncellendi.',
         'series_status_updated' => 'Randevu serisi durumu başarıyla güncellendi.',
         'conflict' => 'Antrenör veya öğrenci için randevu çakışması tespit edildi.',
+        'invalid_status_transition' => 'Durum geçişine izin verilmiyor.',
+        'cannot_complete_future' => 'Gelecekteki randevular done veya no_show olarak işaretlenemez.',
     ],
 
     'reminder' => [

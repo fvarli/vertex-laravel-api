@@ -46,6 +46,24 @@ class DashboardSummaryTest extends TestCase
             'status' => Appointment::STATUS_PLANNED,
         ]);
 
+        Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainer->id,
+            'student_id' => $studentActive->id,
+            'starts_at' => now()->startOfDay()->addHours(4),
+            'ends_at' => now()->startOfDay()->addHours(5),
+            'status' => Appointment::STATUS_DONE,
+        ]);
+
+        Appointment::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainer->id,
+            'student_id' => $studentActive->id,
+            'starts_at' => now()->startOfDay()->addHours(6),
+            'ends_at' => now()->startOfDay()->addHours(7),
+            'status' => Appointment::STATUS_NO_SHOW,
+        ]);
+
         Program::factory()->create([
             'workspace_id' => $workspace->id,
             'student_id' => $studentActive->id,
@@ -62,7 +80,9 @@ class DashboardSummaryTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.students.total', 2)
             ->assertJsonPath('data.students.active', 1)
-            ->assertJsonPath('data.programs.active_this_week', 1);
+            ->assertJsonPath('data.programs.active_this_week', 1)
+            ->assertJsonPath('data.appointments.today_no_show', 1)
+            ->assertJsonPath('data.appointments.today_attendance_rate', 50);
     }
 
     public function test_trainer_gets_only_self_scoped_summary(): void

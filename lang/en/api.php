@@ -77,6 +77,11 @@ return [
         'status_updated' => 'Program status updated successfully.',
         'active_exists_for_week' => 'An active program already exists for this student and week.',
         'duplicate_day_order' => 'Program items cannot share the same day_of_week and order_no.',
+        'template_created' => 'Program template created successfully.',
+        'template_updated' => 'Program template updated successfully.',
+        'template_deleted' => 'Program template deleted successfully.',
+        'copied_week' => 'Program copied to target week successfully.',
+        'copy_source_missing' => 'No source program found for the selected source week.',
     ],
 
     // Appointment
@@ -89,6 +94,8 @@ return [
         'series_updated' => 'Appointment series updated successfully.',
         'series_status_updated' => 'Appointment series status updated successfully.',
         'conflict' => 'Appointment conflict detected for trainer or student.',
+        'invalid_status_transition' => 'Status transition is not allowed.',
+        'cannot_complete_future' => 'Future appointments cannot be marked as done or no_show.',
     ],
 
     'reminder' => [

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProgramController;
+use App\Http\Controllers\Api\V1\ProgramTemplateController;
 use App\Http\Controllers\Api\V1\ReminderController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\StudentController;
@@ -87,6 +88,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             Route::post('/', 'store')->name('store');
             Route::get('/', 'index')->name('index');
             Route::get('/{student}', 'show')->name('show');
+            Route::get('/{student}/timeline', 'timeline')->name('timeline');
             Route::put('/{student}', 'update')->name('update');
             Route::patch('/{student}/status', 'updateStatus')->name('status');
         });
@@ -95,11 +97,20 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::prefix('students/{student}/programs')->name('v1.programs.')->controller(ProgramController::class)->group(function () {
             Route::post('/', 'store')->name('store');
             Route::get('/', 'index')->name('index');
+            Route::post('/from-template', 'storeFromTemplate')->name('store-from-template');
+            Route::post('/copy-week', 'copyWeek')->name('copy-week');
         });
         Route::prefix('programs')->name('v1.programs.')->controller(ProgramController::class)->group(function () {
             Route::get('/{program}', 'show')->name('show');
             Route::put('/{program}', 'update')->name('update');
             Route::patch('/{program}/status', 'updateStatus')->name('status');
+        });
+        Route::prefix('program-templates')->name('v1.program-templates.')->controller(ProgramTemplateController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{template}', 'show')->name('show');
+            Route::put('/{template}', 'update')->name('update');
+            Route::delete('/{template}', 'destroy')->name('destroy');
         });
 
         // Appointment and calendar routes

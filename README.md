@@ -16,10 +16,14 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 - RBAC foundation: `roles`, `permissions`, and scoped pivots (`model_role`, `model_permission`)
 - Students: create, list, update, set status (`active` / `passive`)
 - Programs: weekly program management with ordered program items
+- Program templates: reusable workout templates with item rows
+- Program acceleration: create from template + copy source week to target week
 - Appointments: scheduling with overlap conflict protection
+- Attendance hardening: status transition guard (planned/done/cancelled/no_show)
 - Recurring appointments: weekly/monthly appointment series generation
 - Reminder queue: appointment-scoped WhatsApp reminders (`pending/ready/sent/missed/cancelled`)
 - Dashboard summary endpoint for KPI cards and today overview
+- Student timeline endpoint: merged program + appointment activity feed
 - Calendar availability endpoint for frontend schedule view
 - WhatsApp deep-link helper endpoint for student messaging
 - Domain audit trail for student/program/appointment mutations
@@ -183,11 +187,19 @@ Authenticated (workspace/domain):
 - `GET /api/v1/students/{student}`
 - `PUT /api/v1/students/{student}`
 - `PATCH /api/v1/students/{student}/status`
+- `GET /api/v1/students/{student}/timeline`
 - `POST /api/v1/students/{student}/programs`
 - `GET /api/v1/students/{student}/programs`
+- `POST /api/v1/students/{student}/programs/from-template`
+- `POST /api/v1/students/{student}/programs/copy-week`
 - `GET /api/v1/programs/{program}`
 - `PUT /api/v1/programs/{program}`
 - `PATCH /api/v1/programs/{program}/status`
+- `GET /api/v1/program-templates`
+- `POST /api/v1/program-templates`
+- `GET /api/v1/program-templates/{template}`
+- `PUT /api/v1/program-templates/{template}`
+- `DELETE /api/v1/program-templates/{template}`
 - `POST /api/v1/appointments`
 - `GET /api/v1/appointments`
 - `GET /api/v1/appointments/{appointment}`
@@ -206,6 +218,21 @@ Authenticated (workspace/domain):
 - `PATCH /api/v1/reminders/{reminder}/cancel`
 - `GET /api/v1/calendar`
 - `GET /api/v1/calendar/availability`
+
+## Operations Accelerator (Sprint)
+
+- `POST /students/{student}/programs/from-template`
+  - Uses `template_id` + `week_start_date` to generate a full weekly program.
+- `POST /students/{student}/programs/copy-week`
+  - Copies a student's source week program to a target week.
+- `GET /students/{student}/timeline`
+  - Returns recent merged events (`program` + `appointment`) for fast coach context.
+- Appointment status transitions are now guarded:
+  - Allowed: `planned -> done/cancelled/no_show`
+  - Allowed: `done -> planned` (correction)
+  - Allowed: `cancelled -> planned`
+  - Allowed: `no_show -> planned/done/cancelled`
+  - Disallowed transitions return `422`.
 
 ## Route Matrix
 
@@ -240,11 +267,19 @@ Authenticated (workspace/domain):
 | GET | `/api/v1/students/{student}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.show` |
 | PUT | `/api/v1/students/{student}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.update` |
 | PATCH | `/api/v1/students/{student}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.status` |
+| GET | `/api/v1/students/{student}/timeline` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.students.timeline` |
 | POST | `/api/v1/students/{student}/programs` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.store` |
 | GET | `/api/v1/students/{student}/programs` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.index` |
+| POST | `/api/v1/students/{student}/programs/from-template` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.store-from-template` |
+| POST | `/api/v1/students/{student}/programs/copy-week` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.copy-week` |
 | GET | `/api/v1/programs/{program}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.show` |
 | PUT | `/api/v1/programs/{program}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.update` |
 | PATCH | `/api/v1/programs/{program}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.status` |
+| GET | `/api/v1/program-templates` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.program-templates.index` |
+| POST | `/api/v1/program-templates` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.program-templates.store` |
+| GET | `/api/v1/program-templates/{template}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.program-templates.show` |
+| PUT | `/api/v1/program-templates/{template}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.program-templates.update` |
+| DELETE | `/api/v1/program-templates/{template}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.program-templates.destroy` |
 | POST | `/api/v1/appointments` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.store` |
 | GET | `/api/v1/appointments` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.index` |
 | POST | `/api/v1/appointments/series` | Bearer token | `auth:sanctum,user.active,workspace.context,idempotent.appointments` | `v1.appointments.series.store` |

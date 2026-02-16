@@ -30,6 +30,16 @@ class DashboardService
             ->whereBetween('week_start_date', [$weekStart, $weekEnd])
             ->when($trainerUserId !== null, fn ($q) => $q->where('trainer_user_id', $trainerUserId));
 
+        $todayDoneCount = (clone $appointmentBase)
+            ->whereBetween('starts_at', [$todayStart, $todayEnd])
+            ->where('status', Appointment::STATUS_DONE)
+            ->count();
+        $todayNoShowCount = (clone $appointmentBase)
+            ->whereBetween('starts_at', [$todayStart, $todayEnd])
+            ->where('status', Appointment::STATUS_NO_SHOW)
+            ->count();
+        $attendanceDenominator = $todayDoneCount + $todayNoShowCount;
+
         return [
             'date' => $todayStart->toDateString(),
             'students' => [
@@ -39,10 +49,8 @@ class DashboardService
             ],
             'appointments' => [
                 'today_total' => (clone $appointmentBase)->whereBetween('starts_at', [$todayStart, $todayEnd])->count(),
-                'today_done' => (clone $appointmentBase)
-                    ->whereBetween('starts_at', [$todayStart, $todayEnd])
-                    ->where('status', Appointment::STATUS_DONE)
-                    ->count(),
+                'today_done' => $todayDoneCount,
+                'today_no_show' => $todayNoShowCount,
                 'today_planned' => (clone $appointmentBase)
                     ->whereBetween('starts_at', [$todayStart, $todayEnd])
                     ->where('status', Appointment::STATUS_PLANNED)
@@ -55,6 +63,9 @@ class DashboardService
                     ->whereBetween('starts_at', [$todayStart, $nextWeekEnd])
                     ->whereIn('status', [Appointment::STATUS_PLANNED, Appointment::STATUS_DONE])
                     ->count(),
+                'today_attendance_rate' => $attendanceDenominator > 0
+                    ? round(($todayDoneCount / $attendanceDenominator) * 100, 1)
+                    : null,
             ],
             'programs' => [
                 'active_this_week' => (clone $programBase)->where('status', Program::STATUS_ACTIVE)->count(),

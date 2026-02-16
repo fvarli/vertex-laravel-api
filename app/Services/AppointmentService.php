@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\AppointmentConflictException;
 use App\Models\Appointment;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class AppointmentService
 {
@@ -76,6 +77,8 @@ class AppointmentService
 
     public function updateStatus(Appointment $appointment, string $status): Appointment
     {
+        $this->assertStatusTransitionAllowed($appointment, $status);
+
         $appointment->update(['status' => $status]);
 
         $appointment = $appointment->refresh()->load(['student', 'trainer', 'workspace']);
@@ -87,6 +90,37 @@ class AppointmentService
         }
 
         return $appointment;
+    }
+
+    private function assertStatusTransitionAllowed(Appointment $appointment, string $nextStatus): void
+    {
+        $currentStatus = (string) $appointment->status;
+
+        if ($currentStatus === $nextStatus) {
+            return;
+        }
+
+        $allowedTransitions = [
+            Appointment::STATUS_PLANNED => [Appointment::STATUS_DONE, Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW],
+            Appointment::STATUS_DONE => [Appointment::STATUS_PLANNED],
+            Appointment::STATUS_NO_SHOW => [Appointment::STATUS_PLANNED, Appointment::STATUS_DONE, Appointment::STATUS_CANCELLED],
+            Appointment::STATUS_CANCELLED => [Appointment::STATUS_PLANNED],
+        ];
+
+        if (! in_array($nextStatus, $allowedTransitions[$currentStatus] ?? [], true)) {
+            throw ValidationException::withMessages([
+                'status' => [__('api.appointment.invalid_status_transition')],
+            ]);
+        }
+
+        if (
+            in_array($nextStatus, [Appointment::STATUS_DONE, Appointment::STATUS_NO_SHOW], true)
+            && $appointment->starts_at?->isFuture()
+        ) {
+            throw ValidationException::withMessages([
+                'status' => [__('api.appointment.cannot_complete_future')],
+            ]);
+        }
     }
 
     private function assertNoConflict(

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\Student\ListStudentRequest;
+use App\Http\Requests\Api\V1\Student\ListStudentTimelineRequest;
 use App\Http\Requests\Api\V1\Student\StoreStudentRequest;
 use App\Http\Requests\Api\V1\Student\UpdateStudentRequest;
 use App\Http\Requests\Api\V1\Student\UpdateStudentStatusRequest;
@@ -11,6 +12,7 @@ use App\Http\Resources\StudentResource;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\DomainAuditService;
+use App\Services\StudentTimelineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +21,10 @@ class StudentController extends BaseController
 {
     private const AUDIT_FIELDS = ['full_name', 'phone', 'status', 'trainer_user_id'];
 
-    public function __construct(private readonly DomainAuditService $auditService) {}
+    public function __construct(
+        private readonly DomainAuditService $auditService,
+        private readonly StudentTimelineService $timelineService,
+    ) {}
 
     /**
      * List students in active workspace with role-based scope and filters.
@@ -179,5 +184,23 @@ class StudentController extends BaseController
         );
 
         return $this->sendResponse(new StudentResource($freshStudent), __('api.student.status_updated'));
+    }
+
+    /**
+     * Show recent student timeline events from programs and appointments.
+     */
+    public function timeline(ListStudentTimelineRequest $request, Student $student): JsonResponse
+    {
+        $this->authorize('view', $student);
+
+        $timeline = $this->timelineService->list(
+            student: $student,
+            limit: (int) ($request->validated('limit') ?? 30),
+        );
+
+        return $this->sendResponse([
+            'student_id' => $student->id,
+            'items' => $timeline,
+        ]);
     }
 }
