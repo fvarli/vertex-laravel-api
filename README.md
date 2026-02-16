@@ -26,7 +26,7 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 - Dashboard summary endpoint for KPI cards and today overview
 - Student timeline endpoint: merged program + appointment activity feed
 - Calendar availability endpoint for frontend schedule view
-- WhatsApp deep-link helper endpoint for student messaging
+- WhatsApp deep-link helper endpoint for appointment reminder messaging
 - Domain audit trail for student/program/appointment mutations
 - Security middleware: request-id, forced JSON, security headers, locale
 - API logging: dedicated `apilog` channel with sensitive-data masking
@@ -465,7 +465,7 @@ React client flow after login:
 1. Store token and set `Authorization: Bearer <token>`.
 2. Fetch workspaces via `GET /api/v1/me/workspaces`.
 3. Select active workspace via `POST /api/v1/workspaces/{workspace}/switch`.
-4. Consume domain endpoints (`students`, `programs`, `appointments`, `calendar`).
+4. Consume domain endpoints (`students`, `programs`, `appointments`, `reminders`, `calendar`).
 5. For reminder messaging from scheduling screens:
    - fetch deep link with `GET /api/v1/appointments/{appointment}/whatsapp-link`
    - persist delivery state with `PATCH /api/v1/appointments/{appointment}/whatsapp-status`
