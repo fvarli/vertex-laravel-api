@@ -71,7 +71,11 @@ Demo login credentials:
 Both users are seeded with:
 - active workspace membership (`Vertex Demo Workspace`)
 - `active_workspace_id` set
-- sample students, programs (with items), and appointments
+- sample students and weekly programs (with items)
+- dynamic 14-day calendar data anchored to current day (`UTC`)
+- mixed schedule model: recurring appointment series + one-off daily appointments
+- appointment reminder queue generated from workspace reminder policy
+- rebuild-safe behavior: rerunning seeders replaces demo domain data instead of growing it
 
 ## Local Development Checklist
 

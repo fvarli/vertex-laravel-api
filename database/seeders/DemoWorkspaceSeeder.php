@@ -17,6 +17,10 @@ class DemoWorkspaceSeeder extends Seeder
             ['name' => 'Vertex Demo Workspace'],
             [
                 'owner_user_id' => $owner->id,
+                'reminder_policy' => [
+                    'enabled' => true,
+                    'whatsapp_offsets_minutes' => [1440, 120],
+                ],
             ],
         );
 

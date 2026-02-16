@@ -3,6 +3,13 @@
 ## Goal
 Validate critical API flows in 10-15 minutes after deployment.
 
+## 0) Demo Seed Sanity (Local/Staging)
+1. Run `php artisan migrate:fresh --seed`.
+2. Verify demo workspace contains 14-day appointment coverage with series + one-off mix.
+Expected:
+- Reminder queue is populated immediately after seed.
+- Re-running `php artisan db:seed` does not duplicate domain data.
+
 ## 1) Auth + Workspace
 1. Login with owner account.
 2. Call `GET /api/v1/me/workspaces`.
