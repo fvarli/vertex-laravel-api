@@ -113,12 +113,18 @@ class UserListTest extends TestCase
 
     public function test_search_and_sort_contract_filters_user_list(): void
     {
-        $userA = User::factory()->create(['name' => 'Aaron']);
-        $userB = User::factory()->create(['name' => 'Zelda']);
+        $userA = User::factory()->create([
+            'name' => 'Aaron',
+            'email' => 'aaron.search-test@vertex.local',
+        ]);
+        $userB = User::factory()->create([
+            'name' => 'Zelda',
+            'email' => 'zelda.search-test@vertex.local',
+        ]);
         $authUser = User::factory()->create();
         Sanctum::actingAs($authUser);
 
-        $response = $this->getJson($this->endpoint.'?search=eld&sort=name&direction=asc&per_page=15');
+        $response = $this->getJson($this->endpoint.'?search=zelda.search-test@vertex.local&sort=name&direction=asc&per_page=15');
 
         $response->assertOk()
             ->assertJsonPath('success', true)
