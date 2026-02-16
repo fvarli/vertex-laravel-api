@@ -8,6 +8,8 @@ use Carbon\Carbon;
 
 class AppointmentService
 {
+    public function __construct(private readonly AppointmentReminderService $appointmentReminderService) {}
+
     public function create(int $workspaceId, int $trainerUserId, int $studentId, array $data): Appointment
     {
         $startsAt = Carbon::parse($data['starts_at'])->utc();
@@ -15,7 +17,11 @@ class AppointmentService
 
         $this->assertNoConflict($workspaceId, $trainerUserId, $studentId, $startsAt, $endsAt);
 
-        return Appointment::query()->create([
+        $appointment = Appointment::query()->create([
+            'series_id' => $data['series_id'] ?? null,
+            'series_occurrence_date' => $data['series_occurrence_date'] ?? null,
+            'is_series_exception' => (bool) ($data['is_series_exception'] ?? false),
+            'series_edit_scope_applied' => $data['series_edit_scope_applied'] ?? null,
             'workspace_id' => $workspaceId,
             'trainer_user_id' => $trainerUserId,
             'student_id' => $studentId,
@@ -25,6 +31,11 @@ class AppointmentService
             'location' => $data['location'] ?? null,
             'notes' => $data['notes'] ?? null,
         ])->load(['student', 'trainer']);
+
+        $workspaceReminderPolicy = $appointment->workspace?->reminder_policy;
+        $this->appointmentReminderService->syncForAppointment($appointment, is_array($workspaceReminderPolicy) ? $workspaceReminderPolicy : null);
+
+        return $appointment;
     }
 
     public function update(Appointment $appointment, array $data): Appointment
@@ -48,18 +59,34 @@ class AppointmentService
             'student_id' => $studentId,
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
+            'is_series_exception' => array_key_exists('is_series_exception', $data)
+                ? (bool) $data['is_series_exception']
+                : $appointment->is_series_exception,
+            'series_edit_scope_applied' => $data['series_edit_scope_applied'] ?? $appointment->series_edit_scope_applied,
             'location' => array_key_exists('location', $data) ? $data['location'] : $appointment->location,
             'notes' => array_key_exists('notes', $data) ? $data['notes'] : $appointment->notes,
         ]);
 
-        return $appointment->refresh()->load(['student', 'trainer']);
+        $appointment = $appointment->refresh()->load(['student', 'trainer', 'workspace']);
+        $workspaceReminderPolicy = $appointment->workspace?->reminder_policy;
+        $this->appointmentReminderService->syncForAppointment($appointment, is_array($workspaceReminderPolicy) ? $workspaceReminderPolicy : null);
+
+        return $appointment;
     }
 
     public function updateStatus(Appointment $appointment, string $status): Appointment
     {
         $appointment->update(['status' => $status]);
 
-        return $appointment->refresh()->load(['student', 'trainer']);
+        $appointment = $appointment->refresh()->load(['student', 'trainer', 'workspace']);
+        if ($status === Appointment::STATUS_CANCELLED) {
+            $this->appointmentReminderService->cancelPending($appointment);
+        } else {
+            $workspaceReminderPolicy = $appointment->workspace?->reminder_policy;
+            $this->appointmentReminderService->syncForAppointment($appointment, is_array($workspaceReminderPolicy) ? $workspaceReminderPolicy : null);
+        }
+
+        return $appointment;
     }
 
     private function assertNoConflict(

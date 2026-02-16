@@ -85,7 +85,16 @@ return [
         'updated' => 'Randevu başarıyla güncellendi.',
         'status_updated' => 'Randevu durumu başarıyla güncellendi.',
         'whatsapp_status_updated' => 'Randevu WhatsApp durumu başarıyla güncellendi.',
+        'series_created' => 'Randevu serisi başarıyla oluşturuldu.',
+        'series_updated' => 'Randevu serisi başarıyla güncellendi.',
+        'series_status_updated' => 'Randevu serisi durumu başarıyla güncellendi.',
         'conflict' => 'Antrenör veya öğrenci için randevu çakışması tespit edildi.',
+    ],
+
+    'reminder' => [
+        'opened' => 'Hatırlatma açıldı olarak işaretlendi.',
+        'marked_sent' => 'Hatırlatma gönderildi olarak işaretlendi.',
+        'cancelled' => 'Hatırlatma iptal edildi.',
     ],
 
     // Web

@@ -17,6 +17,8 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 - Students: create, list, update, set status (`active` / `passive`)
 - Programs: weekly program management with ordered program items
 - Appointments: scheduling with overlap conflict protection
+- Recurring appointments: weekly/monthly appointment series generation
+- Reminder queue: appointment-scoped WhatsApp reminders (`pending/ready/sent/missed/cancelled`)
 - Dashboard summary endpoint for KPI cards and today overview
 - Calendar availability endpoint for frontend schedule view
 - WhatsApp deep-link helper endpoint for student messaging
@@ -188,6 +190,15 @@ Authenticated (workspace/domain):
 - `PATCH /api/v1/appointments/{appointment}/status`
 - `PATCH /api/v1/appointments/{appointment}/whatsapp-status`
 - `GET /api/v1/appointments/{appointment}/whatsapp-link`
+- `POST /api/v1/appointments/series`
+- `GET /api/v1/appointments/series`
+- `GET /api/v1/appointments/series/{series}`
+- `PUT /api/v1/appointments/series/{series}`
+- `PATCH /api/v1/appointments/series/{series}/status`
+- `GET /api/v1/reminders`
+- `PATCH /api/v1/reminders/{reminder}/open`
+- `PATCH /api/v1/reminders/{reminder}/mark-sent`
+- `PATCH /api/v1/reminders/{reminder}/cancel`
 - `GET /api/v1/calendar`
 - `GET /api/v1/calendar/availability`
 
@@ -231,10 +242,19 @@ Authenticated (workspace/domain):
 | PATCH | `/api/v1/programs/{program}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.programs.status` |
 | POST | `/api/v1/appointments` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.store` |
 | GET | `/api/v1/appointments` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.index` |
+| POST | `/api/v1/appointments/series` | Bearer token | `auth:sanctum,user.active,workspace.context,idempotent.appointments` | `v1.appointments.series.store` |
+| GET | `/api/v1/appointments/series` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.series.index` |
+| GET | `/api/v1/appointments/series/{series}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.series.show` |
+| PUT | `/api/v1/appointments/series/{series}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.series.update` |
+| PATCH | `/api/v1/appointments/series/{series}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.series.status` |
 | GET | `/api/v1/appointments/{appointment}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.show` |
 | PUT | `/api/v1/appointments/{appointment}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.update` |
 | PATCH | `/api/v1/appointments/{appointment}/status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.status` |
 | PATCH | `/api/v1/appointments/{appointment}/whatsapp-status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.whatsapp-status` |
+| GET | `/api/v1/reminders` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reminders.index` |
+| PATCH | `/api/v1/reminders/{reminder}/open` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reminders.open` |
+| PATCH | `/api/v1/reminders/{reminder}/mark-sent` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reminders.mark-sent` |
+| PATCH | `/api/v1/reminders/{reminder}/cancel` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reminders.cancel` |
 | GET | `/api/v1/appointments/{appointment}/whatsapp-link` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.whatsapp.appointment-link` |
 | GET | `/api/v1/calendar` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.calendar.index` |
 | GET | `/api/v1/calendar/availability` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.calendar.availability` |
@@ -248,6 +268,14 @@ Authenticated (workspace/domain):
 - Appointment guard: trainer and student overlap is blocked (`422 Unprocessable Entity`, `errors.code[0] = time_slot_conflict`).
 - Appointment idempotency guard: optional `Idempotency-Key` prevents duplicate create requests for the same actor/workspace.
 - WhatsApp reminder flow is appointment-scoped: link generation and manual `sent/not_sent` tracking live under appointment endpoints.
+- Reminder offsets default to `24h` and `2h` before `starts_at`, configurable by `workspaces.reminder_policy`.
+- Student-level WhatsApp link endpoint is removed; use appointment-scoped links only.
+
+## Scheduler
+
+- Reminder queue housekeeping is executed with:
+  - `php artisan reminders:mark-missed`
+- `routes/console.php` schedules it every 5 minutes.
 
 ## Rate Limits
 
@@ -352,6 +380,8 @@ List endpoint query contract:
 - students: `status` (`active`, `passive`, `all`) - optional, defaults to `all` when omitted
 - programs: `status` (`draft`, `active`, `archived`, `all`)
 - appointments: `status`, `whatsapp_status` (`sent`, `not_sent`, `all`), `trainer_id`, `student_id`, `from|to`, `date_from|date_to`
+- appointment series: `status` (`active`, `paused`, `ended`, `all`), `trainer_id`, `student_id`, `from`, `to`
+- reminders: `status` (`pending`, `ready`, `sent`, `missed`, `cancelled`, `failed`, `all`), `trainer_id`, `student_id`, `from`, `to`
 - users: `search`, `sort` (`id`, `name`, `email`, `created_at`)
 - reporting: `date_from`, `date_to`, `group_by` (`day`, `week`, `month`), `trainer_id` (owner_admin only)
 
@@ -387,6 +417,9 @@ React client flow after login:
 5. For reminder messaging from scheduling screens:
    - fetch deep link with `GET /api/v1/appointments/{appointment}/whatsapp-link`
    - persist delivery state with `PATCH /api/v1/appointments/{appointment}/whatsapp-status`
+6. For reminder queue workflows:
+   - list queue with `GET /api/v1/reminders`
+   - mark reminder opened/sent/cancelled with reminder action endpoints
 
 Recommended headers:
 - `Accept: application/json`

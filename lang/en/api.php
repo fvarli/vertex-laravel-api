@@ -85,7 +85,16 @@ return [
         'updated' => 'Appointment updated successfully.',
         'status_updated' => 'Appointment status updated successfully.',
         'whatsapp_status_updated' => 'Appointment WhatsApp status updated successfully.',
+        'series_created' => 'Appointment series created successfully.',
+        'series_updated' => 'Appointment series updated successfully.',
+        'series_status_updated' => 'Appointment series status updated successfully.',
         'conflict' => 'Appointment conflict detected for trainer or student.',
+    ],
+
+    'reminder' => [
+        'opened' => 'Reminder marked as opened.',
+        'marked_sent' => 'Reminder marked as sent.',
+        'cancelled' => 'Reminder cancelled.',
     ],
 
     // Web

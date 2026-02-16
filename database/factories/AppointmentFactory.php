@@ -20,6 +20,10 @@ class AppointmentFactory extends Factory
         $start = now()->addDay()->setHour(10)->setMinute(0)->setSecond(0);
 
         return [
+            'series_id' => null,
+            'series_occurrence_date' => null,
+            'is_series_exception' => false,
+            'series_edit_scope_applied' => null,
             'workspace_id' => Workspace::factory(),
             'trainer_user_id' => User::factory(),
             'student_id' => Student::factory(),

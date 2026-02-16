@@ -13,6 +13,7 @@ use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\AppointmentSeriesService;
 use App\Services\AppointmentService;
 use App\Services\DomainAuditService;
 use Illuminate\Http\JsonResponse;
@@ -20,10 +21,11 @@ use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends BaseController
 {
-    private const AUDIT_FIELDS = ['student_id', 'trainer_user_id', 'starts_at', 'ends_at', 'status', 'whatsapp_status', 'whatsapp_marked_at', 'whatsapp_marked_by_user_id', 'location'];
+    private const AUDIT_FIELDS = ['series_id', 'series_occurrence_date', 'is_series_exception', 'series_edit_scope_applied', 'student_id', 'trainer_user_id', 'starts_at', 'ends_at', 'status', 'whatsapp_status', 'whatsapp_marked_at', 'whatsapp_marked_by_user_id', 'location'];
 
     public function __construct(
         private readonly AppointmentService $appointmentService,
+        private readonly AppointmentSeriesService $appointmentSeriesService,
         private readonly DomainAuditService $auditService,
     ) {}
 
@@ -44,6 +46,7 @@ class AppointmentController extends BaseController
         $direction = (string) ($validated['direction'] ?? 'desc');
 
         $appointments = Appointment::query()
+            ->with(['student', 'trainer', 'reminders'])
             ->where('workspace_id', $workspaceId)
             ->when($workspaceRole !== 'owner_admin', fn ($q) => $q->where('trainer_user_id', $user->id))
             ->when($from, fn ($q, $fromValue) => $q->where('starts_at', '>=', $fromValue))
@@ -148,7 +151,7 @@ class AppointmentController extends BaseController
     {
         $this->authorize('view', $appointment);
 
-        return $this->sendResponse(new AppointmentResource($appointment));
+        return $this->sendResponse(new AppointmentResource($appointment->load(['student', 'trainer', 'reminders'])));
     }
 
     /**
@@ -161,6 +164,8 @@ class AppointmentController extends BaseController
         $before = $appointment->toArray();
         $data = $request->validated();
         $workspaceRole = $request->attributes->get('workspace_role');
+        $editScope = (string) ($data['edit_scope'] ?? 'single');
+        unset($data['edit_scope']);
 
         if (isset($data['trainer_user_id'])) {
             if ($workspaceRole !== 'owner_admin') {
@@ -203,6 +208,55 @@ class AppointmentController extends BaseController
         }
 
         try {
+            if ($appointment->series_id && in_array($editScope, ['future', 'all'], true)) {
+                $series = $appointment->series;
+
+                if ($series) {
+                    $seriesData = [];
+                    if (array_key_exists('location', $data)) {
+                        $seriesData['location'] = $data['location'];
+                    }
+                    if (array_key_exists('notes', $data)) {
+                        $seriesData['title'] = $data['notes'];
+                    }
+                    if (array_key_exists('starts_at', $data)) {
+                        $startsAt = \Carbon\Carbon::parse($data['starts_at'])->utc();
+                        $seriesData['start_date'] = $startsAt->toDateString();
+                        $seriesData['starts_at_time'] = $startsAt->format('H:i:s');
+                    }
+                    if (array_key_exists('ends_at', $data)) {
+                        $endsAt = \Carbon\Carbon::parse($data['ends_at'])->utc();
+                        $seriesData['ends_at_time'] = $endsAt->format('H:i:s');
+                    }
+
+                    $this->appointmentSeriesService->updateSeries(
+                        series: $series,
+                        data: $seriesData,
+                        editScope: $editScope,
+                        workspaceReminderPolicy: $request->user()?->activeWorkspace?->reminder_policy,
+                    );
+
+                    $occurrenceDate = isset($data['starts_at'])
+                        ? \Carbon\Carbon::parse($data['starts_at'])->toDateString()
+                        : $appointment->series_occurrence_date?->toDateString();
+
+                    if ($occurrenceDate) {
+                        $replacement = Appointment::query()
+                            ->where('series_id', $series->id)
+                            ->whereDate('series_occurrence_date', $occurrenceDate)
+                            ->first();
+
+                        if ($replacement) {
+                            $appointment = $replacement;
+                        }
+                    }
+
+                    if (! $appointment->exists) {
+                        $appointment = Appointment::query()->findOrFail($appointment->id);
+                    }
+                }
+            }
+
             $appointment = $this->appointmentService->update($appointment, $data);
         } catch (AppointmentConflictException $e) {
             return $this->sendError($e->getMessage(), [

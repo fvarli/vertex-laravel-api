@@ -15,7 +15,15 @@ class Workspace extends Model
     protected $fillable = [
         'name',
         'owner_user_id',
+        'reminder_policy',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'reminder_policy' => 'array',
+        ];
+    }
 
     public function owner(): BelongsTo
     {
@@ -42,5 +50,15 @@ class Workspace extends Model
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
+    }
+
+    public function appointmentSeries(): HasMany
+    {
+        return $this->hasMany(AppointmentSeries::class);
+    }
+
+    public function appointmentReminders(): HasMany
+    {
+        return $this->hasMany(AppointmentReminder::class);
     }
 }

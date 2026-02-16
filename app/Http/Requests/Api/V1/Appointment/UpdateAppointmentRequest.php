@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1\Appointment;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateAppointmentRequest extends FormRequest
 {
@@ -20,6 +21,7 @@ class UpdateAppointmentRequest extends FormRequest
             'ends_at' => ['sometimes', 'date'],
             'location' => ['nullable', 'string', 'max:160'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'edit_scope' => ['sometimes', 'string', Rule::in(['single', 'future', 'all'])],
         ];
     }
 

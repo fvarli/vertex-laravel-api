@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AppointmentController;
+use App\Http\Controllers\Api\V1\AppointmentSeriesController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\DashboardController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProgramController;
+use App\Http\Controllers\Api\V1\ReminderController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -104,10 +106,23 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::prefix('appointments')->name('v1.appointments.')->controller(AppointmentController::class)->group(function () {
             Route::post('/', 'store')->middleware('idempotent.appointments')->name('store');
             Route::get('/', 'index')->name('index');
+            Route::prefix('series')->name('series.')->controller(AppointmentSeriesController::class)->group(function () {
+                Route::post('/', 'store')->middleware('idempotent.appointments')->name('store');
+                Route::get('/', 'index')->name('index');
+                Route::get('/{series}', 'show')->name('show');
+                Route::put('/{series}', 'update')->name('update');
+                Route::patch('/{series}/status', 'updateStatus')->name('status');
+            });
             Route::patch('/{appointment}/whatsapp-status', 'updateWhatsappStatus')->name('whatsapp-status');
             Route::get('/{appointment}', 'show')->name('show');
             Route::put('/{appointment}', 'update')->name('update');
             Route::patch('/{appointment}/status', 'updateStatus')->name('status');
+        });
+        Route::prefix('reminders')->name('v1.reminders.')->controller(ReminderController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::patch('/{reminder}/open', 'open')->name('open');
+            Route::patch('/{reminder}/mark-sent', 'markSent')->name('mark-sent');
+            Route::patch('/{reminder}/cancel', 'cancel')->name('cancel');
         });
         Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->name('v1.dashboard.summary');
         Route::prefix('reports')->name('v1.reports.')->controller(ReportController::class)->group(function () {
@@ -119,7 +134,6 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::get('/calendar/availability', [CalendarController::class, 'availability'])->name('v1.calendar.availability');
 
         // WhatsApp helper routes
-        Route::get('/students/{student}/whatsapp-link', [WhatsAppController::class, 'studentLink'])->name('v1.whatsapp.student-link');
         Route::get('/appointments/{appointment}/whatsapp-link', [WhatsAppController::class, 'appointmentLink'])->name('v1.whatsapp.appointment-link');
     });
 });
