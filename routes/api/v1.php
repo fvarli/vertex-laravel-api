@@ -131,8 +131,11 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         });
         Route::prefix('reminders')->name('v1.reminders.')->controller(ReminderController::class)->group(function () {
             Route::get('/', 'index')->name('index');
+            Route::get('/export.csv', 'exportCsv')->name('export');
+            Route::post('/bulk', 'bulk')->name('bulk');
             Route::patch('/{reminder}/open', 'open')->name('open');
             Route::patch('/{reminder}/mark-sent', 'markSent')->name('mark-sent');
+            Route::patch('/{reminder}/requeue', 'requeue')->name('requeue');
             Route::patch('/{reminder}/cancel', 'cancel')->name('cancel');
         });
         Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->name('v1.dashboard.summary');
@@ -140,6 +143,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             Route::get('/appointments', 'appointments')->name('appointments');
             Route::get('/students', 'students')->name('students');
             Route::get('/programs', 'programs')->name('programs');
+            Route::get('/reminders', 'reminders')->name('reminders');
         });
         Route::get('/calendar', [CalendarController::class, 'availability'])->name('v1.calendar.index');
         Route::get('/calendar/availability', [CalendarController::class, 'availability'])->name('v1.calendar.availability');

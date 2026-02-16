@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\AppointmentReminder;
 use App\Models\Program;
 use App\Models\Student;
 
@@ -47,8 +48,29 @@ class StudentTimelineService
                 ];
             });
 
+        $reminderEvents = AppointmentReminder::query()
+            ->whereHas('appointment', fn ($query) => $query->where('student_id', $student->id))
+            ->orderBy('scheduled_for', 'desc')
+            ->limit($limit)
+            ->get()
+            ->map(function (AppointmentReminder $reminder) {
+                return [
+                    'type' => 'reminder',
+                    'id' => $reminder->id,
+                    'event_at' => optional($reminder->scheduled_for)?->toIso8601String(),
+                    'status' => $reminder->status,
+                    'title' => 'Reminder',
+                    'meta' => [
+                        'attempt_count' => $reminder->attempt_count,
+                        'next_retry_at' => optional($reminder->next_retry_at)?->toIso8601String(),
+                        'failure_reason' => $reminder->failure_reason,
+                    ],
+                ];
+            });
+
         return $programEvents
             ->concat($appointmentEvents)
+            ->concat($reminderEvents)
             ->sortByDesc('event_at')
             ->take($limit)
             ->values()

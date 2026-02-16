@@ -20,6 +20,19 @@ class DemoWorkspaceSeeder extends Seeder
                 'reminder_policy' => [
                     'enabled' => true,
                     'whatsapp_offsets_minutes' => [1440, 120],
+                    'weekend_mute' => true,
+                    'manual_send_confirmation_required' => true,
+                    'quiet_hours' => [
+                        'enabled' => true,
+                        'start' => '22:00',
+                        'end' => '08:00',
+                        'timezone' => 'Europe/Istanbul',
+                    ],
+                    'retry' => [
+                        'max_attempts' => 2,
+                        'backoff_minutes' => [15, 30],
+                        'escalate_on_exhausted' => true,
+                    ],
                 ],
             ],
         );

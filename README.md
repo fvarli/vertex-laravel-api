@@ -22,6 +22,7 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 - Attendance hardening: status transition guard (planned/done/cancelled/no_show)
 - Recurring appointments: weekly/monthly appointment series generation
 - Reminder queue: appointment-scoped WhatsApp reminders (`pending/ready/sent/missed/cancelled`)
+- Reminder automation: retry scheduling, escalation flow, quiet-hours policy support
 - Dashboard summary endpoint for KPI cards and today overview
 - Student timeline endpoint: merged program + appointment activity feed
 - Calendar availability endpoint for frontend schedule view
@@ -215,7 +216,11 @@ Authenticated (workspace/domain):
 - `GET /api/v1/reminders`
 - `PATCH /api/v1/reminders/{reminder}/open`
 - `PATCH /api/v1/reminders/{reminder}/mark-sent`
+- `PATCH /api/v1/reminders/{reminder}/requeue`
 - `PATCH /api/v1/reminders/{reminder}/cancel`
+- `POST /api/v1/reminders/bulk`
+- `GET /api/v1/reminders/export.csv`
+- `GET /api/v1/reports/reminders`
 - `GET /api/v1/calendar`
 - `GET /api/v1/calendar/availability`
 
@@ -233,6 +238,13 @@ Authenticated (workspace/domain):
   - Allowed: `cancelled -> planned`
   - Allowed: `no_show -> planned/done/cancelled`
   - Disallowed transitions return `422`.
+
+## Reminder Automation (Hybrid MVP)
+
+- Send model: hybrid manual confirmation (provider integration intentionally out of scope).
+- Retry defaults: 2 attempts with backoff `[15, 30]` minutes.
+- Escalation: exhausted retries move reminder to `escalated`.
+- Quiet-hours: policy-driven scheduling guardrails (workspace-level).
 
 ## Route Matrix
 

@@ -25,12 +25,15 @@ class ListReminderRequest extends FormRequest
                 AppointmentReminder::STATUS_MISSED,
                 AppointmentReminder::STATUS_CANCELLED,
                 AppointmentReminder::STATUS_FAILED,
+                AppointmentReminder::STATUS_ESCALATED,
                 'all',
             ])],
             'trainer_id' => ['nullable', 'integer', 'exists:users,id'],
             'student_id' => ['nullable', 'integer', 'exists:students,id'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
+            'escalated_only' => ['nullable', 'boolean'],
+            'retry_due_only' => ['nullable', 'boolean'],
         ];
     }
 }

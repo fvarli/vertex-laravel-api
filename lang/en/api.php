@@ -102,6 +102,8 @@ return [
         'opened' => 'Reminder marked as opened.',
         'marked_sent' => 'Reminder marked as sent.',
         'cancelled' => 'Reminder cancelled.',
+        'requeued' => 'Reminder requeued successfully.',
+        'bulk_applied' => 'Bulk reminder action applied successfully.',
     ],
 
     // Web

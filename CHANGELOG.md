@@ -2,6 +2,26 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.5.0 - 2026-02-16
+
+### Added
+- Reminder automation domain upgrades:
+  - single requeue endpoint (`PATCH /reminders/{id}/requeue`)
+  - bulk reminder actions (`POST /reminders/bulk`)
+  - CSV export (`GET /reminders/export.csv`)
+  - reminder analytics report (`GET /reports/reminders`)
+- Reminder retry/escalation storage fields and policy support.
+- Scheduler commands:
+  - `reminders:prepare-ready`
+  - `reminders:retry-failed`
+  - `reminders:escalate-stale`
+- Reminder automation test coverage and report contract tests.
+
+### Changed
+- Reminder state machine expanded with `escalated`.
+- Student timeline now includes reminder events.
+- Dashboard summary now includes reminder KPI counters.
+
 ## v0.4.0 - 2026-02-16
 
 ### Added

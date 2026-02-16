@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\AppointmentReminder;
 use App\Models\Program;
 use App\Models\Student;
 use Carbon\CarbonImmutable;
@@ -29,6 +30,10 @@ class DashboardService
             ->where('workspace_id', $workspaceId)
             ->whereBetween('week_start_date', [$weekStart, $weekEnd])
             ->when($trainerUserId !== null, fn ($q) => $q->where('trainer_user_id', $trainerUserId));
+        $reminderBase = AppointmentReminder::query()
+            ->where('workspace_id', $workspaceId)
+            ->whereBetween('scheduled_for', [$todayStart, $todayEnd])
+            ->when($trainerUserId !== null, fn ($q) => $q->whereHas('appointment', fn ($a) => $a->where('trainer_user_id', $trainerUserId)));
 
         $todayDoneCount = (clone $appointmentBase)
             ->whereBetween('starts_at', [$todayStart, $todayEnd])
@@ -70,6 +75,12 @@ class DashboardService
             'programs' => [
                 'active_this_week' => (clone $programBase)->where('status', Program::STATUS_ACTIVE)->count(),
                 'draft_this_week' => (clone $programBase)->where('status', Program::STATUS_DRAFT)->count(),
+            ],
+            'reminders' => [
+                'today_total' => (clone $reminderBase)->count(),
+                'today_sent' => (clone $reminderBase)->where('status', AppointmentReminder::STATUS_SENT)->count(),
+                'today_missed' => (clone $reminderBase)->where('status', AppointmentReminder::STATUS_MISSED)->count(),
+                'today_escalated' => (clone $reminderBase)->where('status', AppointmentReminder::STATUS_ESCALATED)->count(),
             ],
         ];
     }

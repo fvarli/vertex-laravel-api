@@ -102,6 +102,8 @@ return [
         'opened' => 'Hatırlatma açıldı olarak işaretlendi.',
         'marked_sent' => 'Hatırlatma gönderildi olarak işaretlendi.',
         'cancelled' => 'Hatırlatma iptal edildi.',
+        'requeued' => 'Hatırlatma başarıyla yeniden kuyruğa alındı.',
+        'bulk_applied' => 'Toplu hatırlatma işlemi başarıyla uygulandı.',
     ],
 
     // Web

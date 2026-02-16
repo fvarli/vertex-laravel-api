@@ -27,7 +27,10 @@
 - [ ] Program template create + from-template + copy-week endpoints work.
 - [ ] Student timeline endpoint returns events.
 - [ ] Recurring series create works.
-- [ ] Reminder list/open/mark-sent/cancel works.
+- [ ] Reminder list/open/mark-sent/requeue/cancel works.
+- [ ] Reminder bulk action works.
+- [ ] Reminder CSV export works.
+- [ ] Reminder report endpoint works.
 - [ ] Attendance transition guards return expected `422` on invalid transitions.
 - [ ] API logs show no unexpected 5xx spike.
 

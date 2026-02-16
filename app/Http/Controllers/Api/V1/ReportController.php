@@ -40,6 +40,15 @@ class ReportController extends BaseController
         );
     }
 
+    public function reminders(ListReportRequest $request): JsonResponse
+    {
+        [$workspaceId, $trainerId, $from, $to, $groupBy] = $this->resolveContext($request);
+
+        return $this->sendResponse(
+            $this->reportService->reminders($workspaceId, $trainerId, $from, $to, $groupBy)
+        );
+    }
+
     private function resolveContext(Request $request): array
     {
         $workspaceId = (int) $request->attributes->get('workspace_id');

@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
 Schedule::command('reminders:mark-missed')->everyFiveMinutes();
+Schedule::command('reminders:prepare-ready')->everyFiveMinutes();
+Schedule::command('reminders:retry-failed')->everyFiveMinutes();
+Schedule::command('reminders:escalate-stale')->everyFiveMinutes();

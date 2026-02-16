@@ -42,9 +42,12 @@ Expected:
 ## 4) Reminder Actions
 1. Call `PATCH /api/v1/reminders/{id}/open`.
 2. Call `PATCH /api/v1/reminders/{id}/mark-sent`.
+3. Call `PATCH /api/v1/reminders/{id}/requeue`.
+4. Call `POST /api/v1/reminders/bulk`.
 Expected:
 - Status transitions are persisted.
 - Appointment WhatsApp fields reflect sent state.
+- Bulk action response returns affected row count.
 
 ## 5) WhatsApp Link Contract
 1. Call `GET /api/v1/appointments/{appointment}/whatsapp-link`.
@@ -53,8 +56,13 @@ Expected:
 
 ## 6) Scheduler Behavior
 1. Trigger `php artisan reminders:mark-missed`.
+2. Trigger `php artisan reminders:prepare-ready`.
+3. Trigger `php artisan reminders:retry-failed`.
+4. Trigger `php artisan reminders:escalate-stale`.
 Expected:
 - Past due `pending/ready` reminders transition to `missed`.
+- Retry-eligible reminders move back to `pending`.
+- Exhausted retries transition to `escalated`.
 
 ## 7) RBAC + Workspace Isolation
 1. Login as trainer user in workspace A.

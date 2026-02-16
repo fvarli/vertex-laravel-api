@@ -24,6 +24,8 @@ class AppointmentReminder extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const STATUS_ESCALATED = 'escalated';
+
     protected $fillable = [
         'workspace_id',
         'appointment_id',
@@ -31,6 +33,10 @@ class AppointmentReminder extends Model
         'scheduled_for',
         'status',
         'attempt_count',
+        'last_attempted_at',
+        'next_retry_at',
+        'escalated_at',
+        'failure_reason',
         'opened_at',
         'marked_sent_at',
         'marked_sent_by_user_id',
@@ -41,6 +47,9 @@ class AppointmentReminder extends Model
     {
         return [
             'scheduled_for' => 'datetime',
+            'last_attempted_at' => 'datetime',
+            'next_retry_at' => 'datetime',
+            'escalated_at' => 'datetime',
             'opened_at' => 'datetime',
             'marked_sent_at' => 'datetime',
             'payload' => 'array',
