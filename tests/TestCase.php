@@ -11,7 +11,7 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        $storagePath = sys_get_temp_dir() . '/vertex-laravel-api-testing-storage';
+        $storagePath = sys_get_temp_dir().'/vertex-laravel-api-testing-storage';
 
         File::ensureDirectoryExists($storagePath);
         $this->app->useStoragePath($storagePath);

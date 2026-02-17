@@ -23,9 +23,9 @@ class HealthController
             : __('api.health.degraded');
 
         return response()->json([
-            'status'  => $result['status'],
+            'status' => $result['status'],
             'version' => 'v1',
-            'checks'  => $result['checks'],
+            'checks' => $result['checks'],
             'message' => $message,
             'request_id' => request()->attributes->get('request_id'),
         ]);

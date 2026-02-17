@@ -12,8 +12,8 @@ class HealthService
     {
         $checks = [
             'database' => $this->checkDatabase(),
-            'cache'    => $this->checkCache(),
-            'queue'    => $this->checkQueue(),
+            'cache' => $this->checkCache(),
+            'queue' => $this->checkQueue(),
         ];
 
         $allHealthy = ! in_array('fail', array_column($checks, 'status'), true);
