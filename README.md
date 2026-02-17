@@ -620,6 +620,27 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push/PR to `main`:
 Recommended branch protection on `main`:
 - require `php-tests` and `code-style` to pass before merge
 
+## CD Pipeline
+
+GitHub Actions workflow (`.github/workflows/deploy.yml`) deploys production when:
+- backend `CI` workflow succeeds on `main` (`workflow_run`)
+- or manually via `workflow_dispatch`
+
+Production deploy steps:
+- SSH into server (`deploy` user)
+- pull `origin/main`
+- `composer install --no-dev --optimize-autoloader`
+- `php artisan migrate --force`
+- cache rebuild (`optimize:clear`, `config:cache`, `route:cache`, `view:cache`)
+- `php artisan queue:restart`
+- health gate: `GET /api/v1/health` with `Accept: application/json`
+
+Required repository secrets:
+- `PROD_HOST`
+- `PROD_USER`
+- `PROD_SSH_KEY`
+- `PROD_SSH_PORT` (optional, defaults to `22`)
+
 ## Keeping README Current
 
 Treat README as code. Update it in the same change set when endpoints, middleware, contracts, limits, CI, or env-based behavior changes.
