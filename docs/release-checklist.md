@@ -9,6 +9,9 @@
 ## Pre-deploy
 - [ ] `.env` values verified (DB, cache, queue, app URL, CORS).
 - [ ] Backup/restore readiness confirmed.
+- [ ] Daily PostgreSQL backup cron exists (`/usr/local/bin/vertex_pg_backup.sh`, retention 14 days).
+- [ ] Backup script is executable and backup directory permissions are valid (`chmod +x`, postgres write access).
+- [ ] Last monthly restore drill result is documented.
 - [ ] Migration plan reviewed.
 - [ ] Rollback owner assigned.
 - [ ] GitHub Actions production secrets are configured (`PROD_HOST`, `PROD_USER`, `PROD_SSH_KEY`, optional `PROD_SSH_PORT`).

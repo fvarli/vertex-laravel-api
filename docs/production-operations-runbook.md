@@ -57,6 +57,50 @@
 - Never run `migrate:fresh` in live production with non-disposable data.
 - Use `migrate --force` only; rollback by controlled migration steps when safe.
 
+### Daily PostgreSQL backup policy
+- Backup path: `/opt/backups/postgres`
+- Script path: `/usr/local/bin/vertex_pg_backup.sh`
+- Schedule: daily at `03:15 UTC`
+- Retention: keep last 14 days
+
+Script:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+DB_NAME="vertex_api"
+BACKUP_DIR="/opt/backups/postgres"
+TS="$(date -u +%Y%m%d_%H%M%S)"
+FILE="${BACKUP_DIR}/${DB_NAME}_${TS}.dump"
+
+sudo -u postgres bash -lc "pg_dump -Fc '${DB_NAME}' > '${FILE}'"
+gzip -f "${FILE}"
+
+find "${BACKUP_DIR}" -type f -name "${DB_NAME}_*.dump.gz" -mtime +14 -delete
+```
+
+Permissions prerequisites:
+
+```bash
+chmod +x /usr/local/bin/vertex_pg_backup.sh
+chown postgres:postgres /opt/backups/postgres
+chmod 700 /opt/backups/postgres
+```
+
+If you see `Permission denied` while writing dump files, re-apply the permissions prerequisites above.
+
+Cron:
+
+```bash
+15 3 * * * /usr/local/bin/vertex_pg_backup.sh >> /var/log/vertex-pg-backup.log 2>&1
+```
+
+### Monthly restore drill
+- Restore latest dump into a temporary DB (`vertex_restore_test`).
+- Validate tables can be listed (`\dt`) and drop test DB afterwards.
+- Record result date in ops notes.
+
 ## 10) Post-incident closeout
 - Record:
   - root cause
@@ -64,4 +108,3 @@
   - recovery steps
   - preventive action
 - Update this runbook/checklists if a gap was discovered.
-
