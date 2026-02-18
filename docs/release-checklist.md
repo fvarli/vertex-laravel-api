@@ -12,6 +12,8 @@
 - [ ] Migration plan reviewed.
 - [ ] Rollback owner assigned.
 - [ ] GitHub Actions production secrets are configured (`PROD_HOST`, `PROD_USER`, `PROD_SSH_KEY`, optional `PROD_SSH_PORT`).
+- [ ] GitHub `production` environment has required reviewers enabled.
+- [ ] `PROD_SSH_KEY` rotation date is within policy window (<= 90 days).
 
 ## Deploy
 - [ ] Merge PR to `main` and confirm `CI` workflow is green.
@@ -38,3 +40,4 @@
 - [ ] If migration rollback needed: `php artisan migrate:rollback --step=1` (only if safe).
 - [ ] Re-deploy previous image/revision.
 - [ ] Re-run smoke checks.
+- [ ] Update `docs/production-operations-runbook.md` if new operational lessons were found.

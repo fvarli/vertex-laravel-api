@@ -641,6 +641,16 @@ Required repository secrets:
 - `PROD_SSH_KEY`
 - `PROD_SSH_PORT` (optional, defaults to `22`)
 
+## Security Audit
+
+GitHub Actions workflow (`.github/workflows/security-audit.yml`) runs weekly (Monday 07:00 UTC):
+- installs dependencies
+- runs `composer audit --locked`
+
+Manual run is available via `workflow_dispatch`.
+Operational response guidance is documented in:
+- `docs/production-operations-runbook.md`
+
 ## Keeping README Current
 
 Treat README as code. Update it in the same change set when endpoints, middleware, contracts, limits, CI, or env-based behavior changes.
