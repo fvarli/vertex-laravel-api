@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\ProgramTemplateController;
 use App\Http\Controllers\Api\V1\ReminderController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\StudentController;
+use App\Http\Controllers\Api\V1\TrainerController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WhatsAppController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
@@ -139,6 +140,10 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             Route::patch('/{reminder}/cancel', 'cancel')->name('cancel');
         });
         Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->name('v1.dashboard.summary');
+        Route::prefix('trainers')->name('v1.trainers.')->controller(TrainerController::class)->group(function () {
+            Route::get('/overview', 'overview')->name('overview');
+            Route::post('/', 'store')->name('store');
+        });
         Route::prefix('reports')->name('v1.reports.')->controller(ReportController::class)->group(function () {
             Route::get('/appointments', 'appointments')->name('appointments');
             Route::get('/students', 'students')->name('students');

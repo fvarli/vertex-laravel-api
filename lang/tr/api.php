@@ -70,6 +70,11 @@ return [
         'status_updated' => 'Öğrenci durumu başarıyla güncellendi.',
     ],
 
+    // Trainer
+    'trainer' => [
+        'created' => 'Antrenör başarıyla oluşturuldu.',
+    ],
+
     // Program
     'program' => [
         'created' => 'Program başarıyla oluşturuldu.',

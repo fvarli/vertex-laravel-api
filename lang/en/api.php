@@ -70,6 +70,11 @@ return [
         'status_updated' => 'Student status updated successfully.',
     ],
 
+    // Trainer
+    'trainer' => [
+        'created' => 'Trainer created successfully.',
+    ],
+
     // Program
     'program' => [
         'created' => 'Program created successfully.',
