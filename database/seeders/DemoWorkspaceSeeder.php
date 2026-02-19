@@ -12,6 +12,7 @@ class DemoWorkspaceSeeder extends Seeder
     {
         $owner = User::query()->where('email', 'owner@vertex.local')->firstOrFail();
         $trainer = User::query()->where('email', 'trainer@vertex.local')->firstOrFail();
+        $admin = User::query()->where('email', 'admin@vertex.local')->firstOrFail();
 
         $workspace = Workspace::query()->updateOrCreate(
             ['name' => 'Vertex Demo Workspace'],
@@ -40,9 +41,11 @@ class DemoWorkspaceSeeder extends Seeder
         $workspace->users()->syncWithoutDetaching([
             $owner->id => ['role' => 'owner_admin', 'is_active' => true],
             $trainer->id => ['role' => 'trainer', 'is_active' => true],
+            $admin->id => ['role' => 'owner_admin', 'is_active' => true],
         ]);
 
         $owner->update(['active_workspace_id' => $workspace->id]);
         $trainer->update(['active_workspace_id' => $workspace->id]);
+        $admin->update(['active_workspace_id' => $workspace->id]);
     }
 }

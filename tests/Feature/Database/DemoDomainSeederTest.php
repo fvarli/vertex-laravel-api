@@ -7,6 +7,7 @@ use App\Models\AppointmentReminder;
 use App\Models\AppointmentSeries;
 use App\Models\Program;
 use App\Models\Student;
+use App\Models\User;
 use App\Models\Workspace;
 use Database\Seeders\DemoDomainSeeder;
 use Database\Seeders\DemoUsersSeeder;
@@ -28,8 +29,17 @@ class DemoDomainSeederTest extends TestCase
         ]);
 
         $workspace = Workspace::query()->where('name', 'Vertex Demo Workspace')->firstOrFail();
+        $platformAdmin = User::query()->where('email', 'admin@vertex.local')->firstOrFail();
         $windowStart = Carbon::now('UTC')->startOfDay();
         $windowEnd = $windowStart->copy()->addDays(13)->endOfDay();
+
+        $this->assertSame($workspace->id, $platformAdmin->active_workspace_id);
+        $this->assertDatabaseHas('workspace_user', [
+            'workspace_id' => $workspace->id,
+            'user_id' => $platformAdmin->id,
+            'role' => 'owner_admin',
+            'is_active' => true,
+        ]);
 
         $this->assertSame(12, Student::query()->where('workspace_id', $workspace->id)->count());
         $this->assertSame(5, Program::query()->where('workspace_id', $workspace->id)->count());

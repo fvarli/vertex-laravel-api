@@ -66,12 +66,15 @@ Demo login credentials:
 - Owner/Admin:
   - email: `owner@vertex.local`
   - password: `password123`
+  - use for day-to-day workspace operations and owner-admin flows
 - Trainer:
   - email: `trainer@vertex.local`
   - password: `password123`
+  - use for trainer-scoped flows (own students/programs/appointments)
 - Platform Admin:
   - email: `admin@vertex.local`
   - password: `password123`
+  - use for platform-level admin checks; also attached to demo workspace as `owner_admin` for workspace-context routes
 
 Both users are seeded with:
 - active workspace membership (`Vertex Demo Workspace`)
