@@ -53,6 +53,13 @@ php artisan serve
 
 API base path: `/api/v1`
 
+## Documentation
+
+- [Architecture](docs/architecture.md) — system architecture, request lifecycle, database schema, RBAC, and module guide
+- [Release Checklist](docs/release-checklist.md)
+- [Smoke QA](docs/smoke-qa.md)
+- [Production Operations Runbook](docs/production-operations-runbook.md)
+
 ## Demo Seed Data
 
 Run seeders for a ready-to-use owner/trainer demo graph:
