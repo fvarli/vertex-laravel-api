@@ -13,6 +13,17 @@ class ListReminderRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        foreach (['escalated_only', 'retry_due_only'] as $field) {
+            if ($this->has($field)) {
+                $this->merge([
+                    $field => filter_var($this->input($field), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
+                ]);
+            }
+        }
+    }
+
     public function rules(): array
     {
         return [

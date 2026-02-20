@@ -17,7 +17,7 @@ class ListStudentRequest extends FormRequest
     {
         return [
             'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
             'search' => ['nullable', 'string', 'max:120'],
             'status' => ['nullable', 'string', Rule::in([Student::STATUS_ACTIVE, Student::STATUS_PASSIVE, 'all'])],
             'sort' => ['nullable', 'string', Rule::in(['id', 'full_name', 'created_at'])],
