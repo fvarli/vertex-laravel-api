@@ -11,6 +11,7 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 - Email verification: verify (signed URL), resend
 - Profile: me, update profile, change password, avatar upload/delete, account delete (soft delete)
 - Multi-workspace tenancy: active workspace context per user
+- Workspace approval workflow: `pending/approved/rejected` with platform-admin decision endpoints
 - Role-based scope: `owner_admin` and `trainer`
 - Identity model: single `users` table with `system_role` (`workspace_user` / `platform_admin`)
 - RBAC foundation: `roles`, `permissions`, and scoped pivots (`model_role`, `model_permission`)
@@ -27,6 +28,8 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 - Student timeline endpoint: merged program + appointment activity feed
 - Calendar availability endpoint for frontend schedule view
 - WhatsApp deep-link helper endpoint for appointment reminder messaging
+- In-app notifications API: list, unread count, mark read, mark all read
+- Approval lifecycle notifications: workspace request/decision (`database` + `mail`)
 - Domain audit trail for student/program/appointment mutations
 - Security middleware: request-id, forced JSON, security headers, locale
 - API logging: dedicated `apilog` channel with sensitive-data masking
@@ -193,6 +196,12 @@ Authenticated (workspace/domain):
 - `GET /api/v1/me/workspaces`
 - `POST /api/v1/workspaces`
 - `POST /api/v1/workspaces/{workspace}/switch`
+- `GET /api/v1/platform/workspaces/pending`
+- `PATCH /api/v1/platform/workspaces/{workspace}/approval`
+- `GET /api/v1/me/notifications`
+- `GET /api/v1/me/notifications/unread-count`
+- `PATCH /api/v1/me/notifications/{notification}/read`
+- `PATCH /api/v1/me/notifications/read-all`
 - `POST /api/v1/students`
 - `GET /api/v1/students`
 - `GET /api/v1/students/{student}`

@@ -114,6 +114,11 @@ return [
         'bulk_applied' => 'Toplu hatırlatma işlemi başarıyla uygulandı.',
     ],
 
+    'notifications' => [
+        'marked_read' => 'Bildirim okundu olarak işaretlendi.',
+        'marked_all_read' => 'Tüm bildirimler okundu olarak işaretlendi.',
+    ],
+
     // Web
     'web' => [
         'api_only' => 'Bu uygulama yalnızca API içindir. Web erişimine izin verilmez.',

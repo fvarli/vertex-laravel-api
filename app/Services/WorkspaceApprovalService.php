@@ -7,6 +7,8 @@ use App\Models\Workspace;
 
 class WorkspaceApprovalService
 {
+    public function __construct(private readonly WorkspaceApprovalNotifier $workspaceApprovalNotifier) {}
+
     public function approve(Workspace $workspace, User $approver, ?string $note = null): Workspace
     {
         $workspace->update([
@@ -16,7 +18,11 @@ class WorkspaceApprovalService
             'approval_note' => $note,
         ]);
 
-        return $workspace->fresh();
+        $workspace = $workspace->fresh();
+        $workspace->loadMissing('owner');
+        $this->workspaceApprovalNotifier->notifyDecision($workspace);
+
+        return $workspace;
     }
 
     public function reject(Workspace $workspace, User $approver, ?string $note = null): Workspace
@@ -28,6 +34,10 @@ class WorkspaceApprovalService
             'approval_note' => $note,
         ]);
 
-        return $workspace->fresh();
+        $workspace = $workspace->fresh();
+        $workspace->loadMissing('owner');
+        $this->workspaceApprovalNotifier->notifyDecision($workspace);
+
+        return $workspace;
     }
 }

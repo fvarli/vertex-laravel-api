@@ -114,6 +114,11 @@ return [
         'bulk_applied' => 'Bulk reminder action applied successfully.',
     ],
 
+    'notifications' => [
+        'marked_read' => 'Notification marked as read.',
+        'marked_all_read' => 'All notifications marked as read.',
+    ],
+
     // Web
     'web' => [
         'api_only' => 'This is an API-only application. No web access allowed.',

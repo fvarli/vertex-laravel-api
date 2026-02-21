@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\V1\Workspace;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -13,6 +14,8 @@ class WorkspaceApprovalFlowTest extends TestCase
 
     public function test_pending_workspace_blocks_critical_actions_until_platform_admin_approval(): void
     {
+        Notification::fake();
+
         $owner = User::factory()->ownerAdmin()->create();
         Sanctum::actingAs($owner);
 

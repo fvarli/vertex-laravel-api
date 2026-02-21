@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\DB;
 
 class WorkspaceService
 {
+    public function __construct(private readonly WorkspaceApprovalNotifier $workspaceApprovalNotifier) {}
+
     public function createWorkspace(User $user, string $name): Workspace
     {
-        return DB::transaction(function () use ($user, $name) {
+        $workspace = DB::transaction(function () use ($user, $name) {
             $workspace = Workspace::query()->create([
                 'name' => trim($name),
                 'owner_user_id' => $user->id,
@@ -29,6 +31,11 @@ class WorkspaceService
 
             return $workspace;
         });
+
+        $workspace->loadMissing('owner');
+        $this->workspaceApprovalNotifier->notifyApprovalRequested($workspace);
+
+        return $workspace;
     }
 
     public function switchWorkspace(User $user, Workspace $workspace): void

@@ -27,6 +27,10 @@
 - [ ] `php artisan route:list --path=api/v1` contains templates/timeline/copy-week/series/reminders endpoints.
 - [ ] Health check endpoint responds `200` with `Accept: application/json` header.
 - [ ] Login + workspace switch works.
+- [ ] Workspace approval flow works (`pending -> approved/rejected`) via platform-admin endpoint.
+- [ ] Pending workspace mutation lock returns `403` with approval-required message.
+- [ ] Notification endpoints work (`/me/notifications`, unread-count, read, read-all).
+- [ ] Approval request/decision notifications are written to `notifications` table.
 - [ ] Program template create + from-template + copy-week endpoints work.
 - [ ] Student timeline endpoint returns events.
 - [ ] Recurring series create works.

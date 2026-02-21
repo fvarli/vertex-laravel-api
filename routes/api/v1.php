@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProgramController;
 use App\Http\Controllers\Api\V1\ProgramTemplateController;
@@ -75,6 +76,14 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             ->name('avatar.update');
         Route::delete('/avatar', 'deleteAvatar')->name('avatar.delete');
         Route::put('/password', 'changePassword')->name('password');
+    });
+
+    // Notification routes
+    Route::prefix('me/notifications')->name('v1.notifications.')->controller(NotificationController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/unread-count', 'unreadCount')->name('unread-count');
+        Route::patch('/read-all', 'markAllRead')->name('read-all');
+        Route::patch('/{notification}/read', 'markRead')->name('read');
     });
 
     // Workspace routes
