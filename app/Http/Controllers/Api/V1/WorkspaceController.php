@@ -34,7 +34,7 @@ class WorkspaceController extends BaseController
     {
         $workspace = $this->workspaceService->createWorkspace($request->user(), $request->validated('name'));
 
-        return $this->sendResponse(new WorkspaceResource($workspace), __('api.workspace.created'), 201);
+        return $this->sendResponse(new WorkspaceResource($workspace), __('api.workspace.created_pending_approval'), 201);
     }
 
     /**

@@ -58,9 +58,12 @@ return [
     // Workspace
     'workspace' => [
         'created' => 'Workspace başarıyla oluşturuldu.',
+        'created_pending_approval' => 'Workspace oluşturuldu ve platform onayına gönderildi.',
         'switched' => 'Aktif workspace başarıyla değiştirildi.',
         'no_active_workspace' => 'Aktif workspace seçilmemiş.',
         'membership_required' => 'Bu workspace için erişim yetkiniz yok.',
+        'approval_required' => 'Bu işlem için workspace onayı gerekli.',
+        'approval_updated' => 'Workspace onay durumu başarıyla güncellendi.',
     ],
 
     // Student

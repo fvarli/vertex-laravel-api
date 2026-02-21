@@ -2,7 +2,9 @@
 
 use App\Http\Middleware\ApiLogMiddleware;
 use App\Http\Middleware\EnforceIdempotencyForAppointments;
+use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureWorkspaceApproved;
 use App\Http\Middleware\EnsureWorkspaceContext;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\RequestIdMiddleware;
@@ -41,6 +43,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'user.active' => EnsureUserIsActive::class,
             'api.log' => ApiLogMiddleware::class,
             'workspace.context' => EnsureWorkspaceContext::class,
+            'workspace.approved' => EnsureWorkspaceApproved::class,
+            'platform.admin' => EnsurePlatformAdmin::class,
             'idempotent.appointments' => EnforceIdempotencyForAppointments::class,
         ]);
         $middleware->redirectGuestsTo(function (Request $request) {

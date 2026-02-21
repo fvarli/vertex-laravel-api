@@ -18,6 +18,9 @@ class WorkspaceFactory extends Factory
         return [
             'name' => fake()->company().' Workspace',
             'owner_user_id' => User::factory(),
+            'approval_status' => 'approved',
+            'approval_requested_at' => now(),
+            'approved_at' => now(),
         ];
     }
 }

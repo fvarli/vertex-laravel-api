@@ -18,6 +18,11 @@ class DemoWorkspaceSeeder extends Seeder
             ['name' => 'Vertex Demo Workspace'],
             [
                 'owner_user_id' => $owner->id,
+                'approval_status' => 'approved',
+                'approval_requested_at' => now(),
+                'approved_at' => now(),
+                'approved_by_user_id' => $admin->id,
+                'approval_note' => 'Auto-approved demo workspace.',
                 'reminder_policy' => [
                     'enabled' => true,
                     'whatsapp_offsets_minutes' => [1440, 120],

@@ -58,9 +58,12 @@ return [
     // Workspace
     'workspace' => [
         'created' => 'Workspace created successfully.',
+        'created_pending_approval' => 'Workspace created and submitted for platform approval.',
         'switched' => 'Active workspace switched successfully.',
         'no_active_workspace' => 'No active workspace selected.',
         'membership_required' => 'You do not have access to this workspace.',
+        'approval_required' => 'Workspace approval is required for this action.',
+        'approval_updated' => 'Workspace approval status updated successfully.',
     ],
 
     // Student

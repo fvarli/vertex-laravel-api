@@ -15,12 +15,19 @@ class Workspace extends Model
     protected $fillable = [
         'name',
         'owner_user_id',
+        'approval_status',
+        'approval_requested_at',
+        'approved_at',
+        'approved_by_user_id',
+        'approval_note',
         'reminder_policy',
     ];
 
     protected function casts(): array
     {
         return [
+            'approval_requested_at' => 'datetime',
+            'approved_at' => 'datetime',
             'reminder_policy' => 'array',
         ];
     }
@@ -28,6 +35,11 @@ class Workspace extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_user_id');
     }
 
     public function users(): BelongsToMany

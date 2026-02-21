@@ -15,6 +15,8 @@ class WorkspaceService
             $workspace = Workspace::query()->create([
                 'name' => trim($name),
                 'owner_user_id' => $user->id,
+                'approval_status' => 'pending',
+                'approval_requested_at' => now(),
             ]);
 
             $workspace->users()->syncWithoutDetaching([

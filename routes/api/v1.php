@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\TrainerController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WhatsAppController;
+use App\Http\Controllers\Api\V1\WorkspaceApprovalController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -82,67 +83,71 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
     });
     Route::post('/workspaces', [WorkspaceController::class, 'store'])->name('v1.workspace.store');
     Route::post('/workspaces/{workspace}/switch', [WorkspaceController::class, 'switch'])->name('v1.workspace.switch');
+    Route::prefix('platform/workspaces')->name('v1.platform.workspaces.')->middleware('platform.admin')->controller(WorkspaceApprovalController::class)->group(function () {
+        Route::get('/pending', 'pending')->name('pending');
+        Route::patch('/{workspace}/approval', 'update')->name('update');
+    });
 
     Route::middleware('workspace.context')->group(function () {
         // Student routes
         Route::prefix('students')->name('v1.students.')->controller(StudentController::class)->group(function () {
-            Route::post('/', 'store')->name('store');
+            Route::post('/', 'store')->middleware('workspace.approved')->name('store');
             Route::get('/', 'index')->name('index');
             Route::get('/{student}', 'show')->name('show');
             Route::get('/{student}/timeline', 'timeline')->name('timeline');
-            Route::put('/{student}', 'update')->name('update');
-            Route::patch('/{student}/status', 'updateStatus')->name('status');
+            Route::put('/{student}', 'update')->middleware('workspace.approved')->name('update');
+            Route::patch('/{student}/status', 'updateStatus')->middleware('workspace.approved')->name('status');
         });
 
         // Program routes
         Route::prefix('students/{student}/programs')->name('v1.programs.')->controller(ProgramController::class)->group(function () {
-            Route::post('/', 'store')->name('store');
+            Route::post('/', 'store')->middleware('workspace.approved')->name('store');
             Route::get('/', 'index')->name('index');
-            Route::post('/from-template', 'storeFromTemplate')->name('store-from-template');
-            Route::post('/copy-week', 'copyWeek')->name('copy-week');
+            Route::post('/from-template', 'storeFromTemplate')->middleware('workspace.approved')->name('store-from-template');
+            Route::post('/copy-week', 'copyWeek')->middleware('workspace.approved')->name('copy-week');
         });
         Route::prefix('programs')->name('v1.programs.')->controller(ProgramController::class)->group(function () {
             Route::get('/{program}', 'show')->name('show');
-            Route::put('/{program}', 'update')->name('update');
-            Route::patch('/{program}/status', 'updateStatus')->name('status');
+            Route::put('/{program}', 'update')->middleware('workspace.approved')->name('update');
+            Route::patch('/{program}/status', 'updateStatus')->middleware('workspace.approved')->name('status');
         });
         Route::prefix('program-templates')->name('v1.program-templates.')->controller(ProgramTemplateController::class)->group(function () {
             Route::get('/', 'index')->name('index');
-            Route::post('/', 'store')->name('store');
+            Route::post('/', 'store')->middleware('workspace.approved')->name('store');
             Route::get('/{template}', 'show')->name('show');
-            Route::put('/{template}', 'update')->name('update');
-            Route::delete('/{template}', 'destroy')->name('destroy');
+            Route::put('/{template}', 'update')->middleware('workspace.approved')->name('update');
+            Route::delete('/{template}', 'destroy')->middleware('workspace.approved')->name('destroy');
         });
 
         // Appointment and calendar routes
         Route::prefix('appointments')->name('v1.appointments.')->controller(AppointmentController::class)->group(function () {
-            Route::post('/', 'store')->middleware('idempotent.appointments')->name('store');
+            Route::post('/', 'store')->middleware(['workspace.approved', 'idempotent.appointments'])->name('store');
             Route::get('/', 'index')->name('index');
             Route::prefix('series')->name('series.')->controller(AppointmentSeriesController::class)->group(function () {
-                Route::post('/', 'store')->middleware('idempotent.appointments')->name('store');
+                Route::post('/', 'store')->middleware(['workspace.approved', 'idempotent.appointments'])->name('store');
                 Route::get('/', 'index')->name('index');
                 Route::get('/{series}', 'show')->name('show');
-                Route::put('/{series}', 'update')->name('update');
-                Route::patch('/{series}/status', 'updateStatus')->name('status');
+                Route::put('/{series}', 'update')->middleware('workspace.approved')->name('update');
+                Route::patch('/{series}/status', 'updateStatus')->middleware('workspace.approved')->name('status');
             });
-            Route::patch('/{appointment}/whatsapp-status', 'updateWhatsappStatus')->name('whatsapp-status');
+            Route::patch('/{appointment}/whatsapp-status', 'updateWhatsappStatus')->middleware('workspace.approved')->name('whatsapp-status');
             Route::get('/{appointment}', 'show')->name('show');
-            Route::put('/{appointment}', 'update')->name('update');
-            Route::patch('/{appointment}/status', 'updateStatus')->name('status');
+            Route::put('/{appointment}', 'update')->middleware('workspace.approved')->name('update');
+            Route::patch('/{appointment}/status', 'updateStatus')->middleware('workspace.approved')->name('status');
         });
         Route::prefix('reminders')->name('v1.reminders.')->controller(ReminderController::class)->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/export.csv', 'exportCsv')->name('export');
-            Route::post('/bulk', 'bulk')->name('bulk');
-            Route::patch('/{reminder}/open', 'open')->name('open');
-            Route::patch('/{reminder}/mark-sent', 'markSent')->name('mark-sent');
-            Route::patch('/{reminder}/requeue', 'requeue')->name('requeue');
-            Route::patch('/{reminder}/cancel', 'cancel')->name('cancel');
+            Route::post('/bulk', 'bulk')->middleware('workspace.approved')->name('bulk');
+            Route::patch('/{reminder}/open', 'open')->middleware('workspace.approved')->name('open');
+            Route::patch('/{reminder}/mark-sent', 'markSent')->middleware('workspace.approved')->name('mark-sent');
+            Route::patch('/{reminder}/requeue', 'requeue')->middleware('workspace.approved')->name('requeue');
+            Route::patch('/{reminder}/cancel', 'cancel')->middleware('workspace.approved')->name('cancel');
         });
         Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->name('v1.dashboard.summary');
         Route::prefix('trainers')->name('v1.trainers.')->controller(TrainerController::class)->group(function () {
             Route::get('/overview', 'overview')->name('overview');
-            Route::post('/', 'store')->name('store');
+            Route::post('/', 'store')->middleware('workspace.approved')->name('store');
         });
         Route::prefix('reports')->name('v1.reports.')->controller(ReportController::class)->group(function () {
             Route::get('/appointments', 'appointments')->name('appointments');
