@@ -326,6 +326,27 @@ class User extends Authenticatable implements MustVerifyEmail
 
 Vertex allows the same user to belong to multiple gyms/businesses through the **workspace** model. Each workspace is an independent data space.
 
+### 6.0 Why Multi-Workspace?
+
+**What is a workspace?** One workspace = one gym or coaching business. A single Vertex deployment serves many fully isolated businesses from the same application instance—similar to how Shopify hosts thousands of independent shops on one platform.
+
+**With vs Without Workspaces:**
+
+| Concern | Without Workspaces (single-tenant) | With Workspaces (multi-tenant) |
+|---------|-----------------------------------|-------------------------------|
+| **Data isolation** | Separate database/deployment per gym | One database, all queries scoped by `workspace_id` |
+| **User mobility** | User needs separate accounts per gym | One account, multiple workspace memberships |
+| **Scaling** | Deploy & maintain N instances | One instance serves N businesses |
+| **Billing** | Per-deployment cost tracking | Per-workspace usage tracking in one system |
+| **GDPR / Compliance** | Data is physically separated | Logical separation — enforced by application layer |
+
+**How it works architecturally:** Every domain entity (`Student`, `Program`, `Appointment`, etc.) carries a `workspace_id` foreign key. Every query is automatically scoped to the active workspace. Four security layers guarantee isolation:
+
+1. **Middleware** (`EnsureWorkspaceContext`) — resolves and validates the active workspace before any controller code runs.
+2. **Controller scoping** — all queries include `where('workspace_id', $workspaceId)`.
+3. **Policy** — Laravel policies verify the user has the correct workspace membership and role before authorizing actions.
+4. **Audit log** — workspace context is attached to every logged event for traceability.
+
 ### 6.1 Workspace Isolation Model
 
 ```
@@ -413,6 +434,36 @@ public function handle(Request $request, Closure $next): Response
 ---
 
 ## 7. RBAC System
+
+### 7.0 Two-Level Authorization Model
+
+Vertex uses a **two-level** authorization model. Understanding this split is key to understanding every access-control decision in the codebase.
+
+**Level 1 — System Role** (`users.system_role` column): determines platform-wide identity.
+
+| System Role | Meaning | Permissions |
+|-------------|---------|-------------|
+| `platform_admin` | Vertex platform operator (think: Shopify employee) | `['*']` — full access to all workspaces and platform-level endpoints |
+| `workspace_user` | Regular user (think: a gym owner or trainer) | No platform-level access; must be a member of a workspace to do anything |
+
+**Level 2 — Workspace Role** (`workspace_user.role` pivot column): determines what a user can do *inside a specific workspace*.
+
+| Workspace Role | Meaning | Scope |
+|----------------|---------|-------|
+| `owner_admin` | Gym/business owner | Full control over the workspace — manages students, programs, appointments, trainers |
+| `trainer` | Trainer/coach | Sees and manages **only their own** students, programs, and appointments |
+
+A user can hold different workspace roles in different workspaces (e.g., `owner_admin` in Workspace A, `trainer` in Workspace B).
+
+**Concrete example:**
+
+| User | System Role | Workspace Role | Can do |
+|------|-------------|---------------|--------|
+| `admin@vertex.local` | `platform_admin` | *(none needed)* | Access any workspace, manage platform settings, view all data |
+| `owner@vertex.local` | `workspace_user` | `owner_admin` in "Downtown Gym" | Manage all students, programs, and trainers in Downtown Gym; **cannot** access other workspaces or platform settings |
+| `trainer@vertex.local` | `workspace_user` | `trainer` in "Downtown Gym" | View/manage only their own students and appointments in Downtown Gym; **cannot** see other trainers' data or workspace settings |
+
+**Shopify analogy:** `platform_admin` = a Shopify employee who can access the internal admin panel and see all shops. `owner_admin` = a merchant who runs their own shop on Shopify — full control of their shop, zero access to Shopify's platform internals or other merchants' shops.
 
 ### 7.1 Role and Permission Definitions
 
