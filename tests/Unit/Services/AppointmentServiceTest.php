@@ -7,7 +7,6 @@ use App\Models\Appointment;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Services\AppointmentReminderService;
 use App\Services\AppointmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;

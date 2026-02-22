@@ -6,7 +6,6 @@ use App\Models\Appointment;
 use App\Models\AppointmentReminder;
 use App\Models\Program;
 use App\Models\Student;
-use App\Models\User;
 use App\Models\Workspace;
 use Carbon\CarbonImmutable;
 

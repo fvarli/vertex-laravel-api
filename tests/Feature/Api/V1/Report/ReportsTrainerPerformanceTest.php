@@ -3,7 +3,6 @@
 namespace Tests\Feature\Api\V1\Report;
 
 use App\Models\Appointment;
-use App\Models\AppointmentReminder;
 use App\Models\Program;
 use App\Models\Student;
 use App\Models\User;

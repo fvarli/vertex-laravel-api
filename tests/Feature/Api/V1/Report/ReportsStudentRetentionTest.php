@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Api\V1\Report;
 
-use App\Models\Appointment;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\Workspace;
