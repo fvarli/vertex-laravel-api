@@ -91,6 +91,8 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         Route::get('/workspaces', 'index')->name('index');
     });
     Route::post('/workspaces', [WorkspaceController::class, 'store'])->name('v1.workspace.store');
+    Route::put('/workspaces/{workspace}', [WorkspaceController::class, 'update'])->name('v1.workspace.update');
+    Route::get('/workspaces/{workspace}/members', [WorkspaceController::class, 'members'])->name('v1.workspace.members');
     Route::post('/workspaces/{workspace}/switch', [WorkspaceController::class, 'switch'])->name('v1.workspace.switch');
     Route::prefix('platform/workspaces')->name('v1.platform.workspaces.')->middleware('platform.admin')->controller(WorkspaceApprovalController::class)->group(function () {
         Route::get('/pending', 'pending')->name('pending');
