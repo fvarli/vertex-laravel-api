@@ -23,4 +23,20 @@ class WhatsAppController extends BaseController
 
         return $this->sendResponse(['url' => $link]);
     }
+
+    /**
+     * Generate bulk WhatsApp links for all appointments on a given date.
+     */
+    public function bulkLinks(Request $request): JsonResponse
+    {
+        $request->validate(['date' => ['required', 'date']]);
+
+        $workspaceId = (int) $request->attributes->get('workspace_id');
+        $workspaceRole = (string) $request->attributes->get('workspace_role');
+        $trainerUserId = $workspaceRole === 'owner_admin' ? null : (int) $request->user()->id;
+
+        $links = $this->whatsAppLinkService->bulkLinks($workspaceId, $trainerUserId, $request->query('date'));
+
+        return $this->sendResponse($links, __('api.whatsapp.bulk_links_generated'));
+    }
 }
