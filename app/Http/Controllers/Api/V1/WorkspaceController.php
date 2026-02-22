@@ -58,7 +58,7 @@ class WorkspaceController extends BaseController
             ->exists();
 
         if (! $hasMembership) {
-            return $this->sendError(__('api.workspace.membership_required'), 403);
+            return $this->sendError(__('api.workspace.membership_required'), [], 403);
         }
 
         $members = $workspace->users()
