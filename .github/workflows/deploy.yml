@@ -31,6 +31,8 @@ jobs:
             cd /var/www/vertex-laravel-api
             git fetch --all
             git reset --hard origin/main
+            echo '${{ secrets.FIREBASE_CREDENTIALS_JSON }}' > storage/firebase-credentials.json
+            chmod 600 storage/firebase-credentials.json
             composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader
             php artisan migrate --force
             php artisan optimize:clear
