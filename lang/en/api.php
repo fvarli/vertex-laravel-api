@@ -119,6 +119,32 @@ return [
         'marked_all_read' => 'All notifications marked as read.',
     ],
 
+    // Reports
+    'reports' => [
+        'trainer_performance' => 'Trainer performance report generated.',
+        'student_retention' => 'Student retention report generated.',
+        'export_csv' => 'CSV export generated.',
+        'export_pdf' => 'PDF export generated.',
+    ],
+
+    // Device Tokens
+    'device_token' => [
+        'registered' => 'Device token registered successfully.',
+        'deleted' => 'Device token deleted successfully.',
+    ],
+
+    // WhatsApp
+    'whatsapp' => [
+        'bulk_links_generated' => 'Bulk WhatsApp links generated.',
+    ],
+
+    // Message Templates
+    'message_template' => [
+        'created' => 'Message template created successfully.',
+        'updated' => 'Message template updated successfully.',
+        'deleted' => 'Message template deleted successfully.',
+    ],
+
     // Web
     'web' => [
         'api_only' => 'This is an API-only application. No web access allowed.',

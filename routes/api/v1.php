@@ -5,14 +5,17 @@ use App\Http\Controllers\Api\V1\AppointmentSeriesController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\MessageTemplateController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ProgramController;
 use App\Http\Controllers\Api\V1\ProgramTemplateController;
 use App\Http\Controllers\Api\V1\ReminderController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ReportExportController;
 use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\TrainerController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -76,6 +79,13 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             ->name('avatar.update');
         Route::delete('/avatar', 'deleteAvatar')->name('avatar.delete');
         Route::put('/password', 'changePassword')->name('password');
+    });
+
+    // Device token routes
+    Route::prefix('devices')->name('v1.devices.')->controller(DeviceTokenController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::delete('/{device}', 'destroy')->name('destroy');
     });
 
     // Notification routes
@@ -165,11 +175,29 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             Route::get('/students', 'students')->name('students');
             Route::get('/programs', 'programs')->name('programs');
             Route::get('/reminders', 'reminders')->name('reminders');
+            Route::get('/trainer-performance', 'trainerPerformance')->name('trainer-performance');
+            Route::get('/student-retention', 'studentRetention')->name('student-retention');
+        });
+        Route::prefix('reports')->name('v1.reports.export.')->controller(ReportExportController::class)->group(function () {
+            Route::get('/appointments/export', 'appointments')->name('appointments');
+            Route::get('/students/export', 'students')->name('students');
+            Route::get('/programs/export', 'programs')->name('programs');
+            Route::get('/reminders/export', 'reminders')->name('reminders');
+            Route::get('/trainer-performance/export', 'trainerPerformance')->name('trainer-performance');
         });
         Route::get('/calendar', [CalendarController::class, 'availability'])->name('v1.calendar.index');
         Route::get('/calendar/availability', [CalendarController::class, 'availability'])->name('v1.calendar.availability');
 
         // WhatsApp helper routes
         Route::get('/appointments/{appointment}/whatsapp-link', [WhatsAppController::class, 'appointmentLink'])->name('v1.whatsapp.appointment-link');
+        Route::get('/whatsapp/bulk-links', [WhatsAppController::class, 'bulkLinks'])->name('v1.whatsapp.bulk-links');
+
+        // Message template routes
+        Route::prefix('message-templates')->name('v1.message-templates.')->controller(MessageTemplateController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->middleware('workspace.approved')->name('store');
+            Route::put('/{messageTemplate}', 'update')->middleware('workspace.approved')->name('update');
+            Route::delete('/{messageTemplate}', 'destroy')->middleware('workspace.approved')->name('destroy');
+        });
     });
 });

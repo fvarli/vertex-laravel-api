@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\Report\ListReportRequest;
+use App\Http\Requests\Api\V1\Report\StudentRetentionReportRequest;
+use App\Http\Requests\Api\V1\Report\TrainerPerformanceReportRequest;
 use App\Services\ReportService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -46,6 +48,52 @@ class ReportController extends BaseController
 
         return $this->sendResponse(
             $this->reportService->reminders($workspaceId, $trainerId, $from, $to, $groupBy)
+        );
+    }
+
+    public function trainerPerformance(TrainerPerformanceReportRequest $request): JsonResponse
+    {
+        $workspaceId = (int) $request->attributes->get('workspace_id');
+        $workspaceRole = (string) $request->attributes->get('workspace_role');
+
+        if ($workspaceRole !== 'owner_admin') {
+            return $this->sendError(__('api.forbidden'), [], 403);
+        }
+
+        $validated = $request->validated();
+
+        $from = isset($validated['date_from'])
+            ? CarbonImmutable::parse($validated['date_from'])->startOfDay()
+            : CarbonImmutable::now()->subDays(30)->startOfDay();
+        $to = isset($validated['date_to'])
+            ? CarbonImmutable::parse($validated['date_to'])->endOfDay()
+            : CarbonImmutable::now()->endOfDay();
+
+        return $this->sendResponse(
+            $this->reportService->trainerPerformance($workspaceId, $from, $to)
+        );
+    }
+
+    public function studentRetention(StudentRetentionReportRequest $request): JsonResponse
+    {
+        $workspaceId = (int) $request->attributes->get('workspace_id');
+        $workspaceRole = (string) $request->attributes->get('workspace_role');
+
+        if ($workspaceRole !== 'owner_admin') {
+            return $this->sendError(__('api.forbidden'), [], 403);
+        }
+
+        $validated = $request->validated();
+
+        $from = isset($validated['date_from'])
+            ? CarbonImmutable::parse($validated['date_from'])->startOfDay()
+            : CarbonImmutable::now()->subDays(30)->startOfDay();
+        $to = isset($validated['date_to'])
+            ? CarbonImmutable::parse($validated['date_to'])->endOfDay()
+            : CarbonImmutable::now()->endOfDay();
+
+        return $this->sendResponse(
+            $this->reportService->studentRetention($workspaceId, $from, $to)
         );
     }
 

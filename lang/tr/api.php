@@ -119,6 +119,32 @@ return [
         'marked_all_read' => 'Tüm bildirimler okundu olarak işaretlendi.',
     ],
 
+    // Raporlar
+    'reports' => [
+        'trainer_performance' => 'Antrenör performans raporu oluşturuldu.',
+        'student_retention' => 'Öğrenci bağlılık raporu oluşturuldu.',
+        'export_csv' => 'CSV dışa aktarımı oluşturuldu.',
+        'export_pdf' => 'PDF dışa aktarımı oluşturuldu.',
+    ],
+
+    // Cihaz Token
+    'device_token' => [
+        'registered' => 'Cihaz token başarıyla kaydedildi.',
+        'deleted' => 'Cihaz token başarıyla silindi.',
+    ],
+
+    // WhatsApp
+    'whatsapp' => [
+        'bulk_links_generated' => 'Toplu WhatsApp linkleri oluşturuldu.',
+    ],
+
+    // Mesaj Şablonları
+    'message_template' => [
+        'created' => 'Mesaj şablonu başarıyla oluşturuldu.',
+        'updated' => 'Mesaj şablonu başarıyla güncellendi.',
+        'deleted' => 'Mesaj şablonu başarıyla silindi.',
+    ],
+
     // Web
     'web' => [
         'api_only' => 'Bu uygulama yalnızca API içindir. Web erişimine izin verilmez.',
