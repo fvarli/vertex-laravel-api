@@ -4,13 +4,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | FCM Server Key
+    | FCM Credentials Path
     |--------------------------------------------------------------------------
     |
-    | The server key for Firebase Cloud Messaging (legacy HTTP API).
+    | Path to the Firebase Service Account JSON file used for OAuth2
+    | authentication with the FCM v1 API.
     |
     */
-    'server_key' => env('FCM_SERVER_KEY'),
+    'credentials_path' => env('FCM_CREDENTIALS_PATH', storage_path('firebase-credentials.json')),
 
     /*
     |--------------------------------------------------------------------------

@@ -18,7 +18,7 @@ class PushNotificationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new PushNotificationService;
+        $this->service = new PushNotificationServiceTestable;
     }
 
     public function test_send_to_user_returns_count_of_active_tokens(): void
@@ -54,12 +54,12 @@ class PushNotificationServiceTest extends TestCase
         $this->assertTrue($result);
     }
 
-    public function test_send_calls_fcm_api_when_enabled(): void
+    public function test_send_calls_fcm_v1_api_when_enabled(): void
     {
-        config(['fcm.enabled' => true, 'fcm.server_key' => 'test-key']);
+        config(['fcm.enabled' => true, 'fcm.project_id' => 'test-project']);
 
         Http::fake([
-            'fcm.googleapis.com/*' => Http::response(['success' => 1], 200),
+            'fcm.googleapis.com/*' => Http::response(['name' => 'projects/test-project/messages/12345'], 200),
         ]);
 
         $result = $this->service->send('device-token', 'Title', 'Body', ['key' => 'value']);
@@ -67,19 +67,21 @@ class PushNotificationServiceTest extends TestCase
         $this->assertTrue($result);
 
         Http::assertSent(function ($request) {
-            return $request->url() === 'https://fcm.googleapis.com/fcm/send'
-                && $request->hasHeader('Authorization', 'key=test-key')
-                && $request['to'] === 'device-token'
-                && $request['notification']['title'] === 'Title';
+            return $request->url() === 'https://fcm.googleapis.com/v1/projects/test-project/messages:send'
+                && $request->hasHeader('Authorization', 'Bearer fake-access-token')
+                && $request['message']['token'] === 'device-token'
+                && $request['message']['notification']['title'] === 'Title'
+                && $request['message']['notification']['body'] === 'Body'
+                && $request['message']['data']['key'] === 'value';
         });
     }
 
     public function test_send_returns_false_when_api_fails(): void
     {
-        config(['fcm.enabled' => true, 'fcm.server_key' => 'test-key']);
+        config(['fcm.enabled' => true, 'fcm.project_id' => 'test-project']);
 
         Http::fake([
-            'fcm.googleapis.com/*' => Http::response(['error' => 'InvalidRegistration'], 400),
+            'fcm.googleapis.com/*' => Http::response(['error' => ['message' => 'Invalid registration']], 400),
         ]);
 
         $result = $this->service->send('bad-token', 'Title', 'Body');
@@ -87,12 +89,60 @@ class PushNotificationServiceTest extends TestCase
         $this->assertFalse($result);
     }
 
-    public function test_send_returns_false_when_no_server_key(): void
+    public function test_send_returns_false_when_no_project_id(): void
     {
-        config(['fcm.enabled' => true, 'fcm.server_key' => null]);
+        config(['fcm.enabled' => true, 'fcm.project_id' => null]);
 
         $result = $this->service->send('token', 'Title', 'Body');
 
         $this->assertFalse($result);
+    }
+
+    public function test_send_returns_false_when_credentials_missing(): void
+    {
+        config(['fcm.enabled' => true, 'fcm.project_id' => 'test-project']);
+
+        $service = new PushNotificationServiceNoCredentials;
+
+        $result = $service->send('token', 'Title', 'Body');
+
+        $this->assertFalse($result);
+    }
+
+    public function test_send_casts_data_values_to_strings(): void
+    {
+        config(['fcm.enabled' => true, 'fcm.project_id' => 'test-project']);
+
+        Http::fake([
+            'fcm.googleapis.com/*' => Http::response(['name' => 'projects/test-project/messages/123'], 200),
+        ]);
+
+        $this->service->send('device-token', 'Title', 'Body', ['id' => 42, 'active' => true]);
+
+        Http::assertSent(function ($request) {
+            return $request['message']['data']['id'] === '42';
+        });
+    }
+}
+
+/**
+ * Testable subclass that bypasses real OAuth2 token fetching.
+ */
+class PushNotificationServiceTestable extends PushNotificationService
+{
+    protected function getAccessToken(): ?string
+    {
+        return 'fake-access-token';
+    }
+}
+
+/**
+ * Subclass that simulates missing credentials.
+ */
+class PushNotificationServiceNoCredentials extends PushNotificationService
+{
+    protected function getAccessToken(): ?string
+    {
+        return null;
     }
 }
