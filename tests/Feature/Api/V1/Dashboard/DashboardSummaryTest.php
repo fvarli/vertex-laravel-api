@@ -82,7 +82,15 @@ class DashboardSummaryTest extends TestCase
             ->assertJsonPath('data.students.active', 1)
             ->assertJsonPath('data.programs.active_this_week', 1)
             ->assertJsonPath('data.appointments.today_no_show', 1)
-            ->assertJsonPath('data.appointments.today_attendance_rate', 50);
+            ->assertJsonPath('data.appointments.today_attendance_rate', 50)
+            ->assertJsonStructure([
+                'data' => [
+                    'trends' => ['appointments_vs_last_week', 'new_students_this_month', 'completion_rate_trend'],
+                    'top_trainers',
+                ],
+            ]);
+
+        $this->assertIsArray($response->json('data.top_trainers'));
     }
 
     public function test_trainer_gets_only_self_scoped_summary(): void
@@ -125,6 +133,74 @@ class DashboardSummaryTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.students.total', 1)
-            ->assertJsonPath('data.appointments.today_total', 1);
+            ->assertJsonPath('data.appointments.today_total', 1)
+            ->assertJsonStructure([
+                'data' => [
+                    'trends' => ['appointments_vs_last_week', 'new_students_this_month', 'completion_rate_trend'],
+                ],
+            ]);
+
+        // Trainer scoped view returns empty top_trainers
+        $this->assertEmpty($response->json('data.top_trainers'));
+    }
+
+    public function test_top_trainers_shows_leaderboard(): void
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $trainerA = User::factory()->trainer()->create(['name' => 'Alice', 'surname' => 'Top']);
+        $trainerB = User::factory()->trainer()->create(['name' => 'Bob', 'surname' => 'Low']);
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+
+        $workspace->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $workspace->users()->attach($trainerA->id, ['role' => 'trainer', 'is_active' => true]);
+        $workspace->users()->attach($trainerB->id, ['role' => 'trainer', 'is_active' => true]);
+        $owner->update(['active_workspace_id' => $workspace->id]);
+
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainerA->id,
+            'status' => Student::STATUS_ACTIVE,
+        ]);
+
+        // TrainerA has 2 completed sessions this week
+        Appointment::factory()->count(2)->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainerA->id,
+            'student_id' => $student->id,
+            'starts_at' => now()->startOfWeek()->addHours(10),
+            'ends_at' => now()->startOfWeek()->addHours(11),
+            'status' => Appointment::STATUS_DONE,
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->getJson('/api/v1/dashboard/summary');
+
+        $response->assertOk();
+
+        $topTrainers = $response->json('data.top_trainers');
+        $this->assertNotEmpty($topTrainers);
+        $this->assertEquals('Alice Top', $topTrainers[0]['name']);
+        $this->assertEquals(2, $topTrainers[0]['completed_sessions']);
+    }
+
+    public function test_trends_show_comparison_data(): void
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $workspace->users()->attach($owner->id, ['role' => 'owner_admin', 'is_active' => true]);
+        $owner->update(['active_workspace_id' => $workspace->id]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->getJson('/api/v1/dashboard/summary');
+
+        $response->assertOk();
+
+        $trends = $response->json('data.trends');
+        $this->assertArrayHasKey('appointments_vs_last_week', $trends);
+        $this->assertArrayHasKey('new_students_this_month', $trends);
+        $this->assertArrayHasKey('completion_rate_trend', $trends);
+        $this->assertContains($trends['completion_rate_trend'], ['up', 'down', 'stable']);
     }
 }
