@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Channels\FcmChannel;
 use App\Models\Workspace;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,7 +19,13 @@ class WorkspaceRejectedNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        $channels = ['database', 'mail'];
+
+        if (FcmChannel::shouldSend($notifiable)) {
+            $channels[] = FcmChannel::class;
+        }
+
+        return $channels;
     }
 
     public function toArray(object $notifiable): array
@@ -30,6 +37,18 @@ class WorkspaceRejectedNotification extends Notification implements ShouldQueue
             'approval_status' => $this->workspace->approval_status,
             'approval_note' => $this->workspace->approval_note,
             'action_url' => '/workspaces',
+        ];
+    }
+
+    public function toFcm(object $notifiable): array
+    {
+        return [
+            'title' => 'Workspace rejected',
+            'body' => "Your workspace \"{$this->workspace->name}\" approval was rejected.",
+            'data' => [
+                'type' => 'workspace.rejected',
+                'workspace_id' => (string) $this->workspace->id,
+            ],
         ];
     }
 

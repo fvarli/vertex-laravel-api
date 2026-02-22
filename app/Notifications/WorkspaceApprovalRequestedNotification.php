@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Channels\FcmChannel;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Bus\Queueable;
@@ -20,7 +21,13 @@ class WorkspaceApprovalRequestedNotification extends Notification implements Sho
 
     public function via(object $notifiable): array
     {
-        return ['database', 'mail'];
+        $channels = ['database', 'mail'];
+
+        if (FcmChannel::shouldSend($notifiable)) {
+            $channels[] = FcmChannel::class;
+        }
+
+        return $channels;
     }
 
     public function toArray(object $notifiable): array
@@ -33,6 +40,18 @@ class WorkspaceApprovalRequestedNotification extends Notification implements Sho
             'owner_name' => trim($this->owner->name.' '.$this->owner->surname),
             'approval_status' => $this->workspace->approval_status,
             'action_url' => '/admin/workspaces',
+        ];
+    }
+
+    public function toFcm(object $notifiable): array
+    {
+        return [
+            'title' => 'New workspace approval request',
+            'body' => "Workspace \"{$this->workspace->name}\" by {$this->owner->email} needs approval.",
+            'data' => [
+                'type' => 'workspace.approval_requested',
+                'workspace_id' => (string) $this->workspace->id,
+            ],
         ];
     }
 
