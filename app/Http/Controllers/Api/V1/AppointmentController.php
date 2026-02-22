@@ -13,6 +13,8 @@ use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use App\Models\Student;
 use App\Models\User;
+use App\Notifications\AppointmentCancelledNotification;
+use App\Notifications\AppointmentCreatedNotification;
 use App\Services\AppointmentSeriesService;
 use App\Services\AppointmentService;
 use App\Services\DomainAuditService;
@@ -140,6 +142,12 @@ class AppointmentController extends BaseController
             after: $appointment->toArray(),
             allowedFields: self::AUDIT_FIELDS,
         );
+
+        $trainer = User::query()->find($appointment->trainer_user_id);
+        if ($trainer) {
+            $appointment->loadMissing('student');
+            $trainer->notify(new AppointmentCreatedNotification($appointment));
+        }
 
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.created'), 201);
     }
@@ -284,7 +292,8 @@ class AppointmentController extends BaseController
         $this->authorize('setStatus', $appointment);
 
         $before = $appointment->toArray();
-        $appointment = $this->appointmentService->updateStatus($appointment, $request->validated('status'));
+        $newStatus = $request->validated('status');
+        $appointment = $this->appointmentService->updateStatus($appointment, $newStatus);
 
         $this->auditService->record(
             request: $request,
@@ -294,6 +303,14 @@ class AppointmentController extends BaseController
             after: $appointment->toArray(),
             allowedFields: self::AUDIT_FIELDS,
         );
+
+        if ($newStatus === Appointment::STATUS_CANCELLED) {
+            $trainer = User::query()->find($appointment->trainer_user_id);
+            if ($trainer) {
+                $appointment->loadMissing('student');
+                $trainer->notify(new AppointmentCancelledNotification($appointment));
+            }
+        }
 
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.status_updated'));
     }
