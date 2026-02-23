@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\Appointment\CalendarAvailabilityRequest;
-use App\Models\Appointment;
+use App\Services\CalendarService;
 use Illuminate\Http\JsonResponse;
 
 class CalendarController extends BaseController
 {
+    public function __construct(private readonly CalendarService $calendarService) {}
+
     /**
      * Return appointment slots for calendar rendering in a date range.
      */
@@ -25,30 +27,8 @@ class CalendarController extends BaseController
                 : $request->user()->id;
         }
 
-        $from = $validated['from'] ?? now()->startOfDay()->toDateTimeString();
-        $to = $validated['to'] ?? now()->addWeek()->endOfDay()->toDateTimeString();
+        $result = $this->calendarService->availability($workspaceId, $trainerId, $validated);
 
-        $appointments = Appointment::query()
-            ->where('workspace_id', $workspaceId)
-            ->whereBetween('starts_at', [$from, $to])
-            ->when($trainerId, fn ($q) => $q->where('trainer_user_id', $trainerId))
-            ->whereNotIn('status', [Appointment::STATUS_CANCELLED])
-            ->orderBy('starts_at')
-            ->get(['id', 'trainer_user_id', 'student_id', 'starts_at', 'ends_at', 'status']);
-
-        $days = $appointments
-            ->groupBy(fn ($appointment) => $appointment->starts_at->toDateString())
-            ->map(fn ($items, $date) => [
-                'date' => $date,
-                'items' => $items->values(),
-            ])
-            ->values();
-
-        return $this->sendResponse([
-            'from' => $from,
-            'to' => $to,
-            'appointments' => $appointments,
-            'days' => $days,
-        ]);
+        return $this->sendResponse($result);
     }
 }
