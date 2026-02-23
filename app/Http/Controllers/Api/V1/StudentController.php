@@ -10,12 +10,12 @@ use App\Http\Requests\Api\V1\Student\UpdateStudentRequest;
 use App\Http\Requests\Api\V1\Student\UpdateStudentStatusRequest;
 use App\Http\Resources\StudentResource;
 use App\Models\Student;
-use App\Models\User;
 use App\Services\DomainAuditService;
+use App\Services\StudentService;
 use App\Services\StudentTimelineService;
+use App\Services\WorkspaceContextService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class StudentController extends BaseController
 {
@@ -24,6 +24,8 @@ class StudentController extends BaseController
     public function __construct(
         private readonly DomainAuditService $auditService,
         private readonly StudentTimelineService $timelineService,
+        private readonly StudentService $studentService,
+        private readonly WorkspaceContextService $workspaceContext,
     ) {}
 
     /**
@@ -31,28 +33,11 @@ class StudentController extends BaseController
      */
     public function index(ListStudentRequest $request): JsonResponse
     {
-        $validated = $request->validated();
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = $request->attributes->get('workspace_role');
-        $user = $request->user();
-        $perPage = (int) ($validated['per_page'] ?? 15);
-        $status = (string) ($validated['status'] ?? 'all');
-        $search = trim((string) ($validated['search'] ?? ''));
-        $sort = (string) ($validated['sort'] ?? 'id');
-        $direction = (string) ($validated['direction'] ?? 'desc');
+        $trainerUserId = $workspaceRole !== 'owner_admin' ? $request->user()->id : null;
 
-        $students = Student::query()
-            ->where('workspace_id', $workspaceId)
-            ->when($workspaceRole !== 'owner_admin', fn ($q) => $q->where('trainer_user_id', $user->id))
-            ->when(in_array($status, [Student::STATUS_ACTIVE, Student::STATUS_PASSIVE], true), fn ($q) => $q->where('status', $status))
-            ->when($search !== '', function ($q) use ($search) {
-                $q->where(function ($w) use ($search) {
-                    $w->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
-                });
-            })
-            ->orderBy($sort, $direction)
-            ->paginate($perPage);
+        $students = $this->studentService->list($workspaceId, $trainerUserId, $request->validated());
 
         return $this->sendResponse(StudentResource::collection($students)->response()->getData(true));
     }
@@ -72,30 +57,11 @@ class StudentController extends BaseController
         }
 
         if ($workspaceRole === 'owner_admin' && isset($data['trainer_user_id'])) {
-            $isWorkspaceTrainer = User::query()
-                ->whereKey((int) $data['trainer_user_id'])
-                ->whereHas('workspaces', fn ($q) => $q
-                    ->where('workspaces.id', $workspaceId)
-                    ->where('workspace_user.is_active', true))
-                ->exists();
-
-            if (! $isWorkspaceTrainer) {
-                throw ValidationException::withMessages([
-                    'trainer_user_id' => [__('api.workspace.membership_required')],
-                ]);
-            }
-
+            $this->workspaceContext->assertTrainerInWorkspace((int) $data['trainer_user_id'], $workspaceId);
             $trainerUserId = (int) $data['trainer_user_id'];
         }
 
-        $student = Student::query()->create([
-            'workspace_id' => $workspaceId,
-            'trainer_user_id' => $trainerUserId,
-            'full_name' => $data['full_name'],
-            'phone' => $data['phone'],
-            'notes' => $data['notes'] ?? null,
-            'status' => Student::STATUS_ACTIVE,
-        ]);
+        $student = $this->studentService->create($workspaceId, $trainerUserId, $data);
 
         $this->auditService->record(
             request: $request,
@@ -134,22 +100,10 @@ class StudentController extends BaseController
                 return $this->sendError(__('api.forbidden'), [], 403);
             }
 
-            $isWorkspaceTrainer = User::query()
-                ->whereKey((int) $data['trainer_user_id'])
-                ->whereHas('workspaces', fn ($q) => $q
-                    ->where('workspaces.id', $student->workspace_id)
-                    ->where('workspace_user.is_active', true))
-                ->exists();
-
-            if (! $isWorkspaceTrainer) {
-                throw ValidationException::withMessages([
-                    'trainer_user_id' => [__('api.workspace.membership_required')],
-                ]);
-            }
+            $this->workspaceContext->assertTrainerInWorkspace((int) $data['trainer_user_id'], $student->workspace_id);
         }
 
-        $student->update($data);
-        $freshStudent = $student->refresh();
+        $freshStudent = $this->studentService->update($student, $data);
 
         $this->auditService->record(
             request: $request,
@@ -171,8 +125,7 @@ class StudentController extends BaseController
         $this->authorize('setStatus', $student);
 
         $before = $student->toArray();
-        $student->update(['status' => $request->validated('status')]);
-        $freshStudent = $student->refresh();
+        $freshStudent = $this->studentService->updateStatus($student, $request->validated('status'));
 
         $this->auditService->record(
             request: $request,
