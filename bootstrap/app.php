@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\ApiLogMiddleware;
 use App\Http\Middleware\CompressResponse;
+use App\Http\Middleware\DeprecatedEndpoint;
 use App\Http\Middleware\EnforceIdempotencyForAppointments;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -52,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'idempotent.appointments' => EnforceIdempotencyForAppointments::class,
             'cache.headers' => SetCacheHeaders::class,
             'sparse.fields' => SparseFieldsets::class,
+            'deprecated' => DeprecatedEndpoint::class,
         ]);
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('api/*')) {
