@@ -6,6 +6,7 @@ use App\Exceptions\AppointmentConflictException;
 use App\Models\Appointment;
 use App\Models\AppointmentSeries;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -15,6 +16,23 @@ class AppointmentSeriesService
         private readonly AppointmentService $appointmentService,
         private readonly AppointmentReminderService $appointmentReminderService,
     ) {}
+
+    public function list(int $workspaceId, ?int $trainerUserId, array $filters): LengthAwarePaginator
+    {
+        $perPage = (int) ($filters['per_page'] ?? 15);
+        $status = (string) ($filters['status'] ?? 'all');
+
+        return AppointmentSeries::query()
+            ->where('workspace_id', $workspaceId)
+            ->when($trainerUserId, fn ($query) => $query->where('trainer_user_id', $trainerUserId))
+            ->when($status !== 'all', fn ($query) => $query->where('status', $status))
+            ->when(isset($filters['trainer_id']), fn ($query) => $query->where('trainer_user_id', (int) $filters['trainer_id']))
+            ->when(isset($filters['student_id']), fn ($query) => $query->where('student_id', (int) $filters['student_id']))
+            ->when(isset($filters['from']), fn ($query) => $query->whereDate('start_date', '>=', $filters['from']))
+            ->when(isset($filters['to']), fn ($query) => $query->whereDate('start_date', '<=', $filters['to']))
+            ->orderByDesc('id')
+            ->paginate($perPage);
+    }
 
     /**
      * @return array{series: AppointmentSeries, generated_count: int, skipped_conflicts_count: int}

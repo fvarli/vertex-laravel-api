@@ -9,10 +9,9 @@ use App\Http\Requests\Api\V1\AppointmentSeries\UpdateAppointmentSeriesRequest;
 use App\Http\Requests\Api\V1\AppointmentSeries\UpdateAppointmentSeriesStatusRequest;
 use App\Http\Resources\AppointmentSeriesResource;
 use App\Models\AppointmentSeries;
-use App\Models\Student;
-use App\Models\User;
 use App\Services\AppointmentSeriesService;
 use App\Services\DomainAuditService;
+use App\Services\WorkspaceContextService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 
@@ -23,27 +22,16 @@ class AppointmentSeriesController extends BaseController
     public function __construct(
         private readonly AppointmentSeriesService $appointmentSeriesService,
         private readonly DomainAuditService $auditService,
+        private readonly WorkspaceContextService $workspaceContext,
     ) {}
 
     public function index(ListAppointmentSeriesRequest $request): JsonResponse
     {
-        $validated = $request->validated();
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = (string) $request->attributes->get('workspace_role');
-        $user = $request->user();
-        $perPage = (int) ($validated['per_page'] ?? 15);
-        $status = (string) ($validated['status'] ?? 'all');
+        $trainerUserId = $workspaceRole !== 'owner_admin' ? $request->user()->id : null;
 
-        $series = AppointmentSeries::query()
-            ->where('workspace_id', $workspaceId)
-            ->when($workspaceRole !== 'owner_admin', fn ($query) => $query->where('trainer_user_id', $user->id))
-            ->when($status !== 'all', fn ($query) => $query->where('status', $status))
-            ->when(isset($validated['trainer_id']), fn ($query) => $query->where('trainer_user_id', (int) $validated['trainer_id']))
-            ->when(isset($validated['student_id']), fn ($query) => $query->where('student_id', (int) $validated['student_id']))
-            ->when(isset($validated['from']), fn ($query) => $query->whereDate('start_date', '>=', $validated['from']))
-            ->when(isset($validated['to']), fn ($query) => $query->whereDate('start_date', '<=', $validated['to']))
-            ->orderByDesc('id')
-            ->paginate($perPage);
+        $series = $this->appointmentSeriesService->list($workspaceId, $trainerUserId, $request->validated());
 
         return $this->sendResponse(AppointmentSeriesResource::collection($series)->response()->getData(true));
     }
@@ -60,32 +48,11 @@ class AppointmentSeriesController extends BaseController
         }
 
         if ($workspaceRole === 'owner_admin' && isset($data['trainer_user_id'])) {
-            $isWorkspaceTrainer = User::query()
-                ->whereKey((int) $data['trainer_user_id'])
-                ->whereHas('workspaces', fn ($query) => $query
-                    ->where('workspaces.id', $workspaceId)
-                    ->where('workspace_user.is_active', true))
-                ->exists();
-
-            if (! $isWorkspaceTrainer) {
-                throw ValidationException::withMessages([
-                    'trainer_user_id' => [__('api.workspace.membership_required')],
-                ]);
-            }
-
+            $this->workspaceContext->assertTrainerInWorkspace((int) $data['trainer_user_id'], $workspaceId);
             $trainerId = (int) $data['trainer_user_id'];
         }
 
-        $student = Student::query()
-            ->whereKey((int) $data['student_id'])
-            ->where('workspace_id', $workspaceId)
-            ->first();
-
-        if (! $student) {
-            throw ValidationException::withMessages([
-                'student_id' => [__('api.workspace.membership_required')],
-            ]);
-        }
+        $student = $this->workspaceContext->assertStudentInWorkspace((int) $data['student_id'], $workspaceId);
 
         if ($workspaceRole !== 'owner_admin' && (int) $student->trainer_user_id !== (int) $trainerId) {
             throw ValidationException::withMessages([
