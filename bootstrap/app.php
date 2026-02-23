@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureWorkspaceApproved;
 use App\Http\Middleware\EnsureWorkspaceContext;
 use App\Http\Middleware\ForceJsonResponse;
+use App\Http\Middleware\SparseFieldsets;
 use App\Http\Middleware\RequestIdMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
 use App\Http\Middleware\SetCacheHeaders;
@@ -50,6 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'platform.admin' => EnsurePlatformAdmin::class,
             'idempotent.appointments' => EnforceIdempotencyForAppointments::class,
             'cache.headers' => SetCacheHeaders::class,
+            'sparse.fields' => SparseFieldsets::class,
         ]);
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('api/*')) {

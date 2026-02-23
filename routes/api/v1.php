@@ -113,8 +113,8 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         // Student routes
         Route::prefix('students')->name('v1.students.')->controller(StudentController::class)->group(function () {
             Route::post('/', 'store')->middleware('workspace.approved')->name('store');
-            Route::get('/', 'index')->middleware('cache.headers:30')->name('index');
-            Route::get('/{student}', 'show')->name('show');
+            Route::get('/', 'index')->middleware(['cache.headers:30', 'sparse.fields'])->name('index');
+            Route::get('/{student}', 'show')->middleware('sparse.fields')->name('show');
             Route::get('/{student}/timeline', 'timeline')->name('timeline');
             Route::put('/{student}', 'update')->middleware('workspace.approved')->name('update');
             Route::patch('/{student}/status', 'updateStatus')->middleware('workspace.approved')->name('status');
@@ -143,7 +143,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         // Appointment and calendar routes
         Route::prefix('appointments')->name('v1.appointments.')->controller(AppointmentController::class)->group(function () {
             Route::post('/', 'store')->middleware(['workspace.approved', 'idempotent.appointments'])->name('store');
-            Route::get('/', 'index')->middleware('cache.headers:30')->name('index');
+            Route::get('/', 'index')->middleware(['cache.headers:30', 'sparse.fields'])->name('index');
             Route::prefix('series')->name('series.')->controller(AppointmentSeriesController::class)->group(function () {
                 Route::post('/', 'store')->middleware(['workspace.approved', 'idempotent.appointments'])->name('store');
                 Route::get('/', 'index')->name('index');
@@ -152,7 +152,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
                 Route::patch('/{series}/status', 'updateStatus')->middleware('workspace.approved')->name('status');
             });
             Route::patch('/{appointment}/whatsapp-status', 'updateWhatsappStatus')->middleware('workspace.approved')->name('whatsapp-status');
-            Route::get('/{appointment}', 'show')->name('show');
+            Route::get('/{appointment}', 'show')->middleware('sparse.fields')->name('show');
             Route::put('/{appointment}', 'update')->middleware('workspace.approved')->name('update');
             Route::patch('/{appointment}/status', 'updateStatus')->middleware('workspace.approved')->name('status');
         });
