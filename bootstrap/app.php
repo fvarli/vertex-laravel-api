@@ -169,13 +169,32 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (ValidationException $e, Request $request) use ($resolveLocale) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 $resolveLocale($request);
-                Log::channel('apilog')->debug('Validation failed', [
+                $validationContext = [
                     'url' => $request->fullUrl(),
                     'method' => $request->method(),
                     'ip' => $request->ip(),
                     'user_id' => $request->user()?->id,
                     'errors' => $e->errors(),
-                ]);
+                ];
+
+                Log::channel('apilog')->debug('Validation failed', $validationContext);
+
+                // Structured validation log for pattern analysis
+                try {
+                    Log::channel('validation')->info('Validation failed', [
+                        'endpoint' => $request->method().' '.$request->path(),
+                        'failed_fields' => array_keys($e->errors()),
+                        'error_count' => count($e->errors(), COUNT_RECURSIVE) - count($e->errors()),
+                        'user_id' => $request->user()?->id,
+                        'workspace_id' => $request->attributes->get('workspace_id'),
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'errors' => $e->errors(),
+                        'request_id' => $request->attributes->get('request_id'),
+                    ]);
+                } catch (\Throwable) {
+                    // Validation logging should never break the response
+                }
 
                 return response()->json([
                     'success' => false,

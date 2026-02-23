@@ -135,6 +135,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'validation' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/api/validation.log'),
+            'level' => 'debug',
+            'days' => env('VALIDATION_LOG_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];
