@@ -13,6 +13,7 @@ use App\Policies\AppointmentSeriesPolicy;
 use App\Policies\ProgramPolicy;
 use App\Policies\StudentPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -33,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Model::preventLazyLoading(! $this->app->isProduction());
+
         Gate::policy(Student::class, StudentPolicy::class);
         Gate::policy(Program::class, ProgramPolicy::class);
         Gate::policy(Appointment::class, AppointmentPolicy::class);
