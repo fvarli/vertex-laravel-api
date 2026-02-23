@@ -43,6 +43,77 @@ class ProgramServiceTest extends TestCase
         ]);
     }
 
+    // ── listTemplates ──────────────────────────────────────────
+
+    public function test_list_templates_returns_paginated_results(): void
+    {
+        ProgramTemplate::factory()->count(3)->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $this->trainer->id,
+        ]);
+
+        $result = $this->service->listTemplates($this->workspace->id, null, ['per_page' => 2]);
+
+        $this->assertCount(2, $result->items());
+        $this->assertEquals(3, $result->total());
+    }
+
+    public function test_list_templates_scopes_by_trainer(): void
+    {
+        ProgramTemplate::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $this->trainer->id,
+        ]);
+
+        $otherTrainer = User::factory()->trainer()->create();
+        ProgramTemplate::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $otherTrainer->id,
+        ]);
+
+        $result = $this->service->listTemplates($this->workspace->id, $this->trainer->id, []);
+
+        $this->assertCount(1, $result->items());
+    }
+
+    // ── listPrograms ─────────────────────────────────────────
+
+    public function test_list_programs_returns_paginated_results(): void
+    {
+        Program::factory()->count(3)->create([
+            'workspace_id' => $this->workspace->id,
+            'student_id' => $this->student->id,
+            'trainer_user_id' => $this->trainer->id,
+        ]);
+
+        $result = $this->service->listPrograms($this->student->id, ['per_page' => 2]);
+
+        $this->assertCount(2, $result->items());
+        $this->assertEquals(3, $result->total());
+    }
+
+    public function test_list_programs_filters_by_status(): void
+    {
+        Program::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'student_id' => $this->student->id,
+            'trainer_user_id' => $this->trainer->id,
+            'status' => Program::STATUS_ACTIVE,
+            'week_start_date' => '2026-06-01',
+        ]);
+        Program::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'student_id' => $this->student->id,
+            'trainer_user_id' => $this->trainer->id,
+            'status' => Program::STATUS_DRAFT,
+            'week_start_date' => '2026-06-08',
+        ]);
+
+        $result = $this->service->listPrograms($this->student->id, ['status' => Program::STATUS_ACTIVE]);
+
+        $this->assertCount(1, $result->items());
+    }
+
     // ── createFromTemplate ─────────────────────────────────────
 
     public function test_create_from_template_copies_items(): void

@@ -5,10 +5,56 @@ namespace App\Services;
 use App\Models\Program;
 use App\Models\ProgramTemplate;
 use App\Models\Student;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
 class ProgramService
 {
+    public function listTemplates(int $workspaceId, ?int $trainerUserId, array $filters): LengthAwarePaginator
+    {
+        $perPage = (int) ($filters['per_page'] ?? 15);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $sort = (string) ($filters['sort'] ?? 'id');
+        $direction = (string) ($filters['direction'] ?? 'desc');
+
+        return ProgramTemplate::query()
+            ->with('items')
+            ->where('workspace_id', $workspaceId)
+            ->when($trainerUserId, fn ($q) => $q->where('trainer_user_id', $trainerUserId))
+            ->when(isset($filters['trainer_user_id']), fn ($q) => $q->where('trainer_user_id', (int) $filters['trainer_user_id']))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('name', 'like', "%{$search}%")
+                        ->orWhere('title', 'like', "%{$search}%")
+                        ->orWhere('goal', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy($sort, $direction)
+            ->paginate($perPage);
+    }
+
+    public function listPrograms(int $studentId, array $filters): LengthAwarePaginator
+    {
+        $perPage = (int) ($filters['per_page'] ?? 100);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $status = (string) ($filters['status'] ?? 'all');
+        $sort = (string) ($filters['sort'] ?? 'id');
+        $direction = (string) ($filters['direction'] ?? 'desc');
+
+        return Program::query()
+            ->with('items')
+            ->where('student_id', $studentId)
+            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('title', 'like', "%{$search}%")
+                        ->orWhere('goal', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy($sort, $direction)
+            ->paginate($perPage);
+    }
+
     public function create(Student $student, int $trainerUserId, array $data): Program
     {
         $status = $data['status'] ?? Program::STATUS_DRAFT;
