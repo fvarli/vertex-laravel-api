@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\ReportExportController;
 use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\TrainerController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\WebhookController;
 use App\Http\Controllers\Api\V1\WhatsAppController;
 use App\Http\Controllers\Api\V1\WorkspaceApprovalController;
 use App\Http\Controllers\Api\V1\WorkspaceController;
@@ -191,6 +192,15 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         // WhatsApp helper routes
         Route::get('/appointments/{appointment}/whatsapp-link', [WhatsAppController::class, 'appointmentLink'])->name('v1.whatsapp.appointment-link');
         Route::get('/whatsapp/bulk-links', [WhatsAppController::class, 'bulkLinks'])->name('v1.whatsapp.bulk-links');
+
+        // Webhook routes
+        Route::prefix('webhooks')->name('v1.webhooks.')->controller(WebhookController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/events', 'availableEvents')->name('events');
+            Route::post('/', 'store')->middleware('workspace.approved')->name('store');
+            Route::put('/{webhook}', 'update')->middleware('workspace.approved')->name('update');
+            Route::delete('/{webhook}', 'destroy')->middleware('workspace.approved')->name('destroy');
+        });
 
         // Message template routes
         Route::prefix('message-templates')->name('v1.message-templates.')->controller(MessageTemplateController::class)->group(function () {
