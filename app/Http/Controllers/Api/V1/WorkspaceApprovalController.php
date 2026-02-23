@@ -17,10 +17,7 @@ class WorkspaceApprovalController extends BaseController
     public function pending(Request $request): JsonResponse
     {
         $perPage = min(max((int) $request->query('per_page', 15), 1), 50);
-        $workspaces = Workspace::query()
-            ->where('approval_status', 'pending')
-            ->orderBy('approval_requested_at')
-            ->paginate($perPage);
+        $workspaces = $this->workspaceApprovalService->listPending($perPage);
 
         return $this->sendResponse(WorkspaceResource::collection($workspaces)->response()->getData(true));
     }

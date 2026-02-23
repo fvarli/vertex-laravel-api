@@ -20,10 +20,7 @@ class WorkspaceController extends BaseController
      */
     public function index(Request $request): JsonResponse
     {
-        $workspaces = $request->user()
-            ->workspaces()
-            ->orderBy('workspaces.id')
-            ->get();
+        $workspaces = $this->workspaceService->listForUser($request->user());
 
         return $this->sendResponse(WorkspaceResource::collection($workspaces));
     }
@@ -61,19 +58,7 @@ class WorkspaceController extends BaseController
             return $this->sendError(__('api.workspace.membership_required'), [], 403);
         }
 
-        $members = $workspace->users()
-            ->orderBy('workspace_user.role')
-            ->get()
-            ->map(fn ($user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'surname' => $user->surname,
-                'email' => $user->email,
-                'role' => $user->pivot->role,
-                'is_active' => $user->pivot->is_active,
-            ]);
-
-        return $this->sendResponse($members);
+        return $this->sendResponse($this->workspaceService->members($workspace));
     }
 
     /**

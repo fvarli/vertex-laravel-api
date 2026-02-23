@@ -5,11 +5,32 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class WorkspaceService
 {
     public function __construct(private readonly WorkspaceApprovalNotifier $workspaceApprovalNotifier) {}
+
+    public function listForUser(User $user): Collection
+    {
+        return $user->workspaces()->orderBy('workspaces.id')->get();
+    }
+
+    public function members(Workspace $workspace): Collection
+    {
+        return $workspace->users()
+            ->orderBy('workspace_user.role')
+            ->get()
+            ->map(fn ($user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'surname' => $user->surname,
+                'email' => $user->email,
+                'role' => $user->pivot->role,
+                'is_active' => $user->pivot->is_active,
+            ]);
+    }
 
     public function createWorkspace(User $user, string $name): Workspace
     {

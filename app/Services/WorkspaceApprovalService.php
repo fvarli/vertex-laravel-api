@@ -4,10 +4,19 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\Workspace;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class WorkspaceApprovalService
 {
     public function __construct(private readonly WorkspaceApprovalNotifier $workspaceApprovalNotifier) {}
+
+    public function listPending(int $perPage = 15): LengthAwarePaginator
+    {
+        return Workspace::query()
+            ->where('approval_status', 'pending')
+            ->orderBy('approval_requested_at')
+            ->paginate($perPage);
+    }
 
     public function approve(Workspace $workspace, User $approver, ?string $note = null): Workspace
     {
