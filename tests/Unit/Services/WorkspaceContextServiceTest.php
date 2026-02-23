@@ -2,11 +2,13 @@
 
 namespace Tests\Unit\Services;
 
+use App\Models\Student;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\WorkspaceContextService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class WorkspaceContextServiceTest extends TestCase
@@ -120,5 +122,71 @@ class WorkspaceContextServiceTest extends TestCase
         $workspace->users()->attach($trainer->id, ['role' => 'trainer', 'is_active' => true]);
 
         $this->assertFalse($this->service->isOwnerAdmin($trainer, $workspace->id));
+    }
+
+    // ── assertTrainerInWorkspace ──────────────────────────────
+
+    public function test_assert_trainer_in_workspace_passes_for_active_member(): void
+    {
+        $trainer = User::factory()->trainer()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => User::factory()->create()->id]);
+        $workspace->users()->attach($trainer->id, ['role' => 'trainer', 'is_active' => true]);
+
+        $this->service->assertTrainerInWorkspace($trainer->id, $workspace->id);
+        $this->assertTrue(true); // No exception thrown
+    }
+
+    public function test_assert_trainer_in_workspace_throws_for_non_member(): void
+    {
+        $trainer = User::factory()->trainer()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => User::factory()->create()->id]);
+
+        $this->expectException(ValidationException::class);
+
+        $this->service->assertTrainerInWorkspace($trainer->id, $workspace->id);
+    }
+
+    public function test_assert_trainer_in_workspace_throws_for_inactive_member(): void
+    {
+        $trainer = User::factory()->trainer()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => User::factory()->create()->id]);
+        $workspace->users()->attach($trainer->id, ['role' => 'trainer', 'is_active' => false]);
+
+        $this->expectException(ValidationException::class);
+
+        $this->service->assertTrainerInWorkspace($trainer->id, $workspace->id);
+    }
+
+    // ── assertStudentInWorkspace ──────────────────────────────
+
+    public function test_assert_student_in_workspace_returns_student(): void
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $trainer = User::factory()->trainer()->create();
+        $student = Student::factory()->create([
+            'workspace_id' => $workspace->id,
+            'trainer_user_id' => $trainer->id,
+        ]);
+
+        $result = $this->service->assertStudentInWorkspace($student->id, $workspace->id);
+
+        $this->assertEquals($student->id, $result->id);
+    }
+
+    public function test_assert_student_in_workspace_throws_for_wrong_workspace(): void
+    {
+        $owner = User::factory()->ownerAdmin()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $otherWorkspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+        $trainer = User::factory()->trainer()->create();
+        $student = Student::factory()->create([
+            'workspace_id' => $otherWorkspace->id,
+            'trainer_user_id' => $trainer->id,
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        $this->service->assertStudentInWorkspace($student->id, $workspace->id);
     }
 }
