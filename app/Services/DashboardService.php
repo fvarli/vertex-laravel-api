@@ -2,16 +2,38 @@
 
 namespace App\Services;
 
+use App\Enums\WorkspaceRole;
 use App\Models\Appointment;
 use App\Models\AppointmentReminder;
 use App\Models\Program;
 use App\Models\Student;
-use App\Models\Workspace;
+use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
     public function summary(int $workspaceId, ?int $trainerUserId = null): array
+    {
+        $cacheKey = "dashboard:summary:{$workspaceId}:{$trainerUserId}";
+
+        return Cache::remember($cacheKey, 120, function () use ($workspaceId, $trainerUserId) {
+            return $this->buildSummary($workspaceId, $trainerUserId);
+        });
+    }
+
+    public static function clearCache(int $workspaceId): void
+    {
+        Cache::forget("dashboard:summary:{$workspaceId}:");
+
+        $cachePrefix = "dashboard:summary:{$workspaceId}:";
+        // Individual trainer caches will expire via TTL
+        // For immediate invalidation on data changes, clear known keys
+        Cache::forget($cachePrefix);
+    }
+
+    private function buildSummary(int $workspaceId, ?int $trainerUserId = null): array
     {
         $todayStart = CarbonImmutable::now()->startOfDay();
         $todayEnd = CarbonImmutable::now()->endOfDay();
@@ -183,33 +205,33 @@ class DashboardService
         $thisWeekStart = CarbonImmutable::now()->startOfWeek()->startOfDay();
         $thisWeekEnd = CarbonImmutable::now()->endOfWeek()->endOfDay();
 
-        $workspace = Workspace::query()->find($workspaceId);
-        if (! $workspace) {
-            return [];
-        }
-
-        $trainers = $workspace->users()
-            ->wherePivot('is_active', true)
-            ->wherePivot('role', 'trainer')
-            ->get();
-
-        $results = [];
-        foreach ($trainers as $trainer) {
-            $completedSessions = Appointment::query()
-                ->where('workspace_id', $workspaceId)
-                ->where('trainer_user_id', $trainer->id)
-                ->whereBetween('starts_at', [$thisWeekStart, $thisWeekEnd])
-                ->where('status', Appointment::STATUS_DONE)
-                ->count();
-
-            $results[] = [
+        return User::query()
+            ->select([
+                'users.id',
+                'users.name',
+                'users.surname',
+                DB::raw('COUNT(appointments.id) as completed_sessions'),
+            ])
+            ->join('workspace_user', function ($join) use ($workspaceId) {
+                $join->on('workspace_user.user_id', '=', 'users.id')
+                    ->where('workspace_user.workspace_id', $workspaceId)
+                    ->where('workspace_user.is_active', true)
+                    ->where('workspace_user.role', WorkspaceRole::Trainer->value);
+            })
+            ->leftJoin('appointments', function ($join) use ($workspaceId, $thisWeekStart, $thisWeekEnd) {
+                $join->on('appointments.trainer_user_id', '=', 'users.id')
+                    ->where('appointments.workspace_id', $workspaceId)
+                    ->where('appointments.status', Appointment::STATUS_DONE)
+                    ->whereBetween('appointments.starts_at', [$thisWeekStart, $thisWeekEnd]);
+            })
+            ->groupBy('users.id', 'users.name', 'users.surname')
+            ->orderByDesc('completed_sessions')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($trainer) => [
                 'name' => trim($trainer->name.' '.$trainer->surname),
-                'completed_sessions' => $completedSessions,
-            ];
-        }
-
-        usort($results, fn ($a, $b) => $b['completed_sessions'] <=> $a['completed_sessions']);
-
-        return array_slice($results, 0, $limit);
+                'completed_sessions' => (int) $trainer->completed_sessions,
+            ])
+            ->all();
     }
 }

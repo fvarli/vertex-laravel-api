@@ -11,10 +11,20 @@ use App\Models\Workspace;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class ReportService
 {
+    private const CACHE_TTL = 300; // 5 minutes
+
     public function appointments(int $workspaceId, ?int $trainerId, CarbonImmutable $from, CarbonImmutable $to, string $groupBy): array
+    {
+        $cacheKey = "report:appointments:{$workspaceId}:{$trainerId}:{$from->toDateString()}:{$to->toDateString()}:{$groupBy}";
+
+        return Cache::remember($cacheKey, self::CACHE_TTL, fn () => $this->buildAppointmentsReport($workspaceId, $trainerId, $from, $to, $groupBy));
+    }
+
+    private function buildAppointmentsReport(int $workspaceId, ?int $trainerId, CarbonImmutable $from, CarbonImmutable $to, string $groupBy): array
     {
         $base = Appointment::query()
             ->where('workspace_id', $workspaceId)
