@@ -4,6 +4,7 @@
 - [ ] `git status` clean (expected files only).
 - [ ] `php artisan test` passes.
 - [ ] `./vendor/bin/pint --test --dirty` passes for touched files.
+- [ ] `./vendor/bin/phpstan analyse` passes (Larastan level 5).
 - [ ] README/API contract updates are in the same PR.
 
 ## Pre-deploy
@@ -39,6 +40,14 @@
 - [ ] Reminder CSV export works.
 - [ ] Reminder report endpoint works.
 - [ ] Attendance transition guards return expected `422` on invalid transitions.
+- [ ] Device token register/list/delete endpoints work.
+- [ ] Trainer create and overview endpoints work.
+- [ ] Webhook CRUD and event list endpoints work.
+- [ ] Message template CRUD endpoints work.
+- [ ] WhatsApp bulk links endpoint works.
+- [ ] Report export endpoints return CSV/PDF.
+- [ ] Bulk appointment status endpoint works.
+- [ ] Reverb WebSocket server is running (if enabled).
 - [ ] API logs show no unexpected 5xx spike.
 - [ ] Queue worker was restarted and is healthy after deploy (`php artisan queue:restart` + service status).
 - [ ] Scheduler is still running (`php artisan schedule:run` via cron/system timer).

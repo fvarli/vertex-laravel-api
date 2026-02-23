@@ -37,6 +37,29 @@ Repository status: API skeleton + Domain MVP (workspace, students, programs, app
 - Localized responses: English and Turkish
 - Endpoint-specific rate limits for sensitive routes
 - CI quality gate: tests, code style, and dependency audit
+- FCM v1 push notifications (Firebase Cloud Messaging with OAuth2)
+- Device token management: register, list, delete
+- Trainer management: create/invite trainer, trainer overview
+- Workspace settings: update workspace, list members
+- Webhook system: CRUD with signed payload delivery + circuit breaker
+- WhatsApp message templates: CRUD for customizable messages
+- WhatsApp bulk link generation endpoint
+- Report exports: CSV/PDF for appointments, students, programs, reminders, trainer performance
+- Trainer performance analytics endpoint
+- Student retention analytics endpoint
+- Bulk appointment status update
+- Cursor pagination support for appointments
+- Image resize and thumbnail generation for avatars
+- Laravel Reverb WebSocket infrastructure
+- PHPStan/Larastan level 5 static analysis
+- Response caching (dashboard) and N+1 query optimization
+- PHP enums for roles and statuses
+- DB transactions for program and appointment writes
+- Event/listener architecture for appointment lifecycle
+- Sparse fieldsets (`?fields=` parameter)
+- Gzip response compression
+- HTTP cache headers (ETag support)
+- RFC 8594 deprecation and sunset headers
 
 ## Requirements
 
@@ -242,6 +265,31 @@ Authenticated (workspace/domain):
 - `GET /api/v1/reports/reminders`
 - `GET /api/v1/calendar`
 - `GET /api/v1/calendar/availability`
+- `PATCH /api/v1/appointments/bulk-status`
+- `GET /api/v1/whatsapp/bulk-links`
+- `GET /api/v1/devices`
+- `POST /api/v1/devices`
+- `DELETE /api/v1/devices/{device}`
+- `POST /api/v1/trainers`
+- `GET /api/v1/trainers/overview`
+- `PUT /api/v1/workspaces/{workspace}`
+- `GET /api/v1/workspaces/{workspace}/members`
+- `GET /api/v1/webhooks`
+- `POST /api/v1/webhooks`
+- `GET /api/v1/webhooks/events`
+- `PUT /api/v1/webhooks/{webhook}`
+- `DELETE /api/v1/webhooks/{webhook}`
+- `GET /api/v1/message-templates`
+- `POST /api/v1/message-templates`
+- `PUT /api/v1/message-templates/{messageTemplate}`
+- `DELETE /api/v1/message-templates/{messageTemplate}`
+- `GET /api/v1/reports/trainer-performance`
+- `GET /api/v1/reports/student-retention`
+- `GET /api/v1/reports/appointments/export`
+- `GET /api/v1/reports/students/export`
+- `GET /api/v1/reports/programs/export`
+- `GET /api/v1/reports/reminders/export`
+- `GET /api/v1/reports/trainer-performance/export`
 
 ## Operations Accelerator (Sprint)
 
@@ -329,6 +377,31 @@ Authenticated (workspace/domain):
 | GET | `/api/v1/appointments/{appointment}/whatsapp-link` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.whatsapp.appointment-link` |
 | GET | `/api/v1/calendar` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.calendar.index` |
 | GET | `/api/v1/calendar/availability` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.calendar.availability` |
+| PATCH | `/api/v1/appointments/bulk-status` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.appointments.bulk-status` |
+| GET | `/api/v1/whatsapp/bulk-links` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.whatsapp.bulk-links` |
+| GET | `/api/v1/devices` | Bearer token | `auth:sanctum,user.active` | `v1.devices.index` |
+| POST | `/api/v1/devices` | Bearer token | `auth:sanctum,user.active` | `v1.devices.store` |
+| DELETE | `/api/v1/devices/{device}` | Bearer token | `auth:sanctum,user.active` | `v1.devices.destroy` |
+| POST | `/api/v1/trainers` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.trainers.store` |
+| GET | `/api/v1/trainers/overview` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.trainers.overview` |
+| PUT | `/api/v1/workspaces/{workspace}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.workspace.update` |
+| GET | `/api/v1/workspaces/{workspace}/members` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.workspace.members` |
+| GET | `/api/v1/webhooks` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.webhooks.index` |
+| POST | `/api/v1/webhooks` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.webhooks.store` |
+| GET | `/api/v1/webhooks/events` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.webhooks.events` |
+| PUT | `/api/v1/webhooks/{webhook}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.webhooks.update` |
+| DELETE | `/api/v1/webhooks/{webhook}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.webhooks.destroy` |
+| GET | `/api/v1/message-templates` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.message-templates.index` |
+| POST | `/api/v1/message-templates` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.message-templates.store` |
+| PUT | `/api/v1/message-templates/{messageTemplate}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.message-templates.update` |
+| DELETE | `/api/v1/message-templates/{messageTemplate}` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.message-templates.destroy` |
+| GET | `/api/v1/reports/trainer-performance` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.trainer-performance` |
+| GET | `/api/v1/reports/student-retention` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.student-retention` |
+| GET | `/api/v1/reports/appointments/export` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.appointments.export` |
+| GET | `/api/v1/reports/students/export` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.students.export` |
+| GET | `/api/v1/reports/programs/export` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.programs.export` |
+| GET | `/api/v1/reports/reminders/export` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.reminders.export` |
+| GET | `/api/v1/reports/trainer-performance/export` | Bearer token | `auth:sanctum,user.active,workspace.context` | `v1.reports.trainer-performance.export` |
 
 ## Domain Rules
 
@@ -609,7 +682,7 @@ API responses include:
 php artisan test
 ```
 
-Current baseline: `136` tests passing (`553` assertions).
+Current baseline: `548` tests passing (`1566` assertions).
 
 ## Release Ops
 
@@ -635,9 +708,10 @@ Current baseline: `136` tests passing (`553` assertions).
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push/PR to `main`:
 - `php-tests`: install, audit, test
 - `code-style`: `./vendor/bin/pint --test --dirty`
+- `static-analysis`: `./vendor/bin/phpstan analyse` (Larastan level 5)
 
 Recommended branch protection on `main`:
-- require `php-tests` and `code-style` to pass before merge
+- require `php-tests`, `code-style`, and `static-analysis` to pass before merge
 
 ## CD Pipeline
 
@@ -652,6 +726,7 @@ Production deploy steps:
 - `php artisan migrate --force`
 - cache rebuild (`optimize:clear`, `config:cache`, `route:cache`, `view:cache`)
 - `php artisan queue:restart`
+- `php artisan reverb:restart` (if WebSocket server is enabled)
 - health gate: `GET /api/v1/health` with `Accept: application/json`
 
 Required repository secrets:

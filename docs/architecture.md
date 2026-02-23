@@ -1,6 +1,6 @@
 # Vertex API — Architecture Documentation
 
-> **Last updated:** 2026-02-20
+> **Last updated:** 2026-02-23
 > **Related project:** [Vertex React App](https://github.com/fvarli/vertex-react-app/blob/main/docs/architecture.md)
 
 ---
@@ -55,6 +55,9 @@
 | API Documentation | Scramble | — |
 | Testing | PHPUnit (Pest compatible) | 11.x |
 | Code Style | Laravel Pint | — |
+| Static Analysis | Larastan (PHPStan) | level 5 |
+| WebSocket | Laravel Reverb | 1.x |
+| PDF Export | barryvdh/laravel-dompdf | 3.x |
 | Server | Nginx + PHP-FPM | — |
 
 **Key composer packages:**
@@ -63,6 +66,10 @@
 laravel/sanctum        — Bearer token authentication
 dedoc/scramble         — Automatic API documentation
 laravel/pint           — Code formatting
+google/auth            — Firebase/GCP OAuth2 credentials
+laravel/reverb         — WebSocket server
+larastan/larastan      — Static analysis (PHPStan wrapper)
+barryvdh/laravel-dompdf — PDF generation
 ```
 
 ---
@@ -611,7 +618,7 @@ class StudentPolicy
 └────────────────────┘     └──────────────┘   └──────────────┘ │
 ```
 
-### 8.2 Model List (14 Models)
+### 8.2 Model List (17 Models)
 
 | Model | Table | Description |
 |-------|-------|-------------|
@@ -629,6 +636,9 @@ class StudentPolicy
 | `Permission` | `permissions` | RBAC permission |
 | `AuditLog` | `audit_logs` | Audit trail record |
 | `IdempotencyKey` | `idempotency_keys` | Idempotent request record |
+| `DeviceToken` | `device_tokens` | FCM device token |
+| `MessageTemplate` | `message_templates` | WhatsApp message template |
+| `WebhookEndpoint` | `webhook_endpoints` | Webhook subscription endpoint |
 
 ### 8.3 Migration Files (Chronological)
 
@@ -657,6 +667,12 @@ class StudentPolicy
 2026_02_16_040000_create_program_templates_table
 2026_02_16_040100_create_program_template_items_table
 2026_02_16_050000_add_retry_and_escalation_fields_to_appointment_reminders_table
+2026_02_21_120000_add_approval_fields_to_workspaces_table
+2026_02_21_130000_create_notifications_table
+2026_02_22_100000_create_device_tokens_table
+2026_02_22_110000_create_message_templates_table
+2026_02_23_100000_create_webhook_endpoints_table
+2026_02_23_152521_add_avatar_thumb_to_users_table
 ```
 
 ---
@@ -783,6 +799,89 @@ class StudentPolicy
 | PATCH | `/reminders/{id}/cancel` | Cancel |
 
 For reminder lifecycle details, see [Section 10.4](#104-reminder-lifecycle).
+
+### 9.6 Devices (Device Token Management)
+
+**Endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/devices` | List device tokens |
+| POST | `/devices` | Register device token |
+| DELETE | `/devices/{device}` | Delete device token |
+
+**Business logic:**
+- Device tokens are used for FCM v1 push notifications
+- Each user can register multiple device tokens (multi-device support)
+- Tokens are scoped per user (not workspace)
+
+### 9.7 Trainers (Trainer Management)
+
+**Endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/trainers` | Create/invite trainer |
+| GET | `/trainers/overview` | Trainer overview (stats) |
+
+**Business logic:**
+- Only `owner_admin` can invite trainers to a workspace
+- Overview provides per-trainer stats (students, appointments, programs)
+
+### 9.8 Webhooks (Webhook System)
+
+**Endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/webhooks` | List webhooks |
+| POST | `/webhooks` | Create webhook |
+| GET | `/webhooks/events` | List available events |
+| PUT | `/webhooks/{webhook}` | Update webhook |
+| DELETE | `/webhooks/{webhook}` | Delete webhook |
+
+**Business logic:**
+- Webhook payloads are signed for security
+- Circuit breaker pattern disables endpoints after consecutive failures
+- Events cover appointment, student, and program lifecycle changes
+
+### 9.9 Message Templates
+
+**Endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/message-templates` | List templates |
+| POST | `/message-templates` | Create template |
+| PUT | `/message-templates/{messageTemplate}` | Update template |
+| DELETE | `/message-templates/{messageTemplate}` | Delete template |
+
+**Business logic:**
+- Templates are workspace-scoped
+- Used for customizable WhatsApp reminder messages
+- Supports variable placeholders (student name, appointment time, etc.)
+
+### 9.10 Reports & Exports
+
+**Endpoints:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/reports/trainer-performance` | Trainer performance analytics |
+| GET | `/reports/student-retention` | Student retention analytics |
+| GET | `/reports/appointments/export` | Appointment report CSV/PDF |
+| GET | `/reports/students/export` | Student report CSV/PDF |
+| GET | `/reports/programs/export` | Program report CSV/PDF |
+| GET | `/reports/reminders/export` | Reminder report CSV/PDF |
+| GET | `/reports/trainer-performance/export` | Trainer performance CSV/PDF |
+| PATCH | `/appointments/bulk-status` | Bulk appointment status update |
+| GET | `/whatsapp/bulk-links` | WhatsApp bulk link generation |
+
+**Business logic:**
+- Export endpoints support `format` query parameter (`csv` or `pdf`)
+- PDF generation uses `barryvdh/laravel-dompdf`
+- Bulk status update enforces the same transition rules as single updates
+- WhatsApp bulk links generate deep links for multiple appointments
 
 ---
 
@@ -1514,8 +1613,39 @@ GET    /reports/appointments                      # Appointment report
 GET    /reports/students                          # Student report
 GET    /reports/programs                          # Program report
 GET    /reports/reminders                         # Reminder report
+GET    /reports/trainer-performance               # Trainer performance analytics
+GET    /reports/student-retention                 # Student retention analytics
+GET    /reports/appointments/export               # Appointment report export
+GET    /reports/students/export                   # Student report export
+GET    /reports/programs/export                   # Program report export
+GET    /reports/reminders/export                  # Reminder report export
+GET    /reports/trainer-performance/export        # Trainer perf. export
+PATCH  /appointments/bulk-status                  # Bulk status update
+GET    /whatsapp/bulk-links                       # Bulk WhatsApp links
 GET    /calendar                                  # Calendar
 GET    /calendar/availability                     # Availability calendar
+
+# ── Device tokens ────────────────────────────
+GET    /devices                                   # Device list
+POST   /devices                                   # Register device
+DELETE /devices/{id}                              # Delete device
+
+# ── Workspace settings ───────────────────────
+PUT    /workspaces/{id}                           # Update workspace
+GET    /workspaces/{id}/members                   # Workspace members
+
+# ── Webhooks ─────────────────────────────────
+GET    /webhooks                                  # Webhook list
+POST   /webhooks                                  # Create webhook
+GET    /webhooks/events                           # Available events
+PUT    /webhooks/{id}                             # Update webhook
+DELETE /webhooks/{id}                             # Delete webhook
+
+# ── Message templates ────────────────────────
+GET    /message-templates                         # Template list
+POST   /message-templates                         # Create template
+PUT    /message-templates/{id}                    # Update template
+DELETE /message-templates/{id}                    # Delete template
 ```
 
 > **Note:** All endpoints are under the `/api/v1` prefix.

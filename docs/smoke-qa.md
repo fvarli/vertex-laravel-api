@@ -82,6 +82,61 @@ Expected:
 - Invalid transitions return `422`.
 - Future completion guard returns `422`.
 
+## 9) Device Token CRUD
+1. Call `POST /api/v1/devices` with FCM token payload.
+2. Call `GET /api/v1/devices`.
+3. Call `DELETE /api/v1/devices/{id}`.
+Expected:
+- Token is registered and listed.
+- Delete returns `200` and token is removed from list.
+
+## 10) Trainer Management
+1. Call `POST /api/v1/trainers` with trainer invite payload (as owner_admin).
+2. Call `GET /api/v1/trainers/overview`.
+Expected:
+- Trainer is created and attached to workspace.
+- Overview returns per-trainer stats.
+
+## 11) Webhook System
+1. Call `GET /api/v1/webhooks/events` to list available events.
+2. Call `POST /api/v1/webhooks` with URL and selected events.
+3. Call `GET /api/v1/webhooks`.
+4. Call `PUT /api/v1/webhooks/{id}` to update URL or events.
+5. Call `DELETE /api/v1/webhooks/{id}`.
+Expected:
+- Events list returns available webhook event types.
+- CRUD operations work and reflect in list.
+
+## 12) Message Templates
+1. Call `POST /api/v1/message-templates` with template body.
+2. Call `GET /api/v1/message-templates`.
+3. Call `PUT /api/v1/message-templates/{id}` to update body.
+4. Call `DELETE /api/v1/message-templates/{id}`.
+Expected:
+- CRUD operations work and reflect in list.
+
+## 13) Bulk WhatsApp Links
+1. Call `GET /api/v1/whatsapp/bulk-links` with appointment filter parameters.
+Expected:
+- Response contains array of WhatsApp deep links for matching appointments.
+
+## 14) Report Exports
+1. Call `GET /api/v1/reports/appointments/export?format=csv`.
+2. Call `GET /api/v1/reports/students/export?format=pdf`.
+3. Call `GET /api/v1/reports/trainer-performance`.
+4. Call `GET /api/v1/reports/student-retention`.
+Expected:
+- CSV export returns downloadable CSV content.
+- PDF export returns downloadable PDF content.
+- Analytics endpoints return JSON data.
+
+## 15) Bulk Appointment Status
+1. Call `PATCH /api/v1/appointments/bulk-status` with list of appointment IDs and target status.
+Expected:
+- All valid transitions are applied.
+- Invalid transitions return `422` with details.
+- Response includes affected count.
+
 ## Failure Handling
 - If any step fails, capture `request_id`, endpoint, and payload.
 - Check `storage/logs` and `apilog` channel entries.
