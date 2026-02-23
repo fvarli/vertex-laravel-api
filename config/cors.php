@@ -15,7 +15,7 @@ return [
     'allowed_origins' => $frontendOrigins,
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
-    'exposed_headers' => [],
+    'exposed_headers' => ['X-Request-Id'],
     'max_age' => 86400,
     'supports_credentials' => false,
 ];
