@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApiLogMiddleware;
+use App\Http\Middleware\CompressResponse;
 use App\Http\Middleware\EnforceIdempotencyForAppointments;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ], append: [
             SecurityHeadersMiddleware::class,
             SetLocaleMiddleware::class,
+            CompressResponse::class,
         ]);
         $middleware->throttleApi('api');
         $middleware->alias([
