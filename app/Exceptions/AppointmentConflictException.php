@@ -2,12 +2,10 @@
 
 namespace App\Exceptions;
 
-use Exception;
-
-class AppointmentConflictException extends Exception
+class AppointmentConflictException extends BusinessRuleException
 {
     public function __construct(string $message = 'Appointment conflict detected.')
     {
-        parent::__construct($message);
+        parent::__construct($message, ['code' => ['time_slot_conflict']]);
     }
 }
