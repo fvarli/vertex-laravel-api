@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\Appointment;
 use App\Models\AppointmentReminder;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class AppointmentReminderService
 {
@@ -16,6 +18,92 @@ class AppointmentReminderService
         'backoff_minutes' => [15, 30],
         'escalate_on_exhausted' => true,
     ];
+
+    public function listReminders(int $workspaceId, ?int $trainerUserId, array $filters): LengthAwarePaginator
+    {
+        $perPage = (int) ($filters['per_page'] ?? 15);
+
+        return $this->buildListQuery($workspaceId, $trainerUserId, $filters)
+            ->orderBy('scheduled_for')
+            ->paginate($perPage);
+    }
+
+    public function listForExport(int $workspaceId, ?int $trainerUserId, array $filters): Collection
+    {
+        return $this->buildListQuery($workspaceId, $trainerUserId, $filters)
+            ->orderBy('scheduled_for')
+            ->get();
+    }
+
+    public function markSent(AppointmentReminder $reminder, int $userId): AppointmentReminder
+    {
+        $now = now()->utc();
+
+        $reminder->update([
+            'status' => AppointmentReminder::STATUS_SENT,
+            'marked_sent_at' => $now,
+            'marked_sent_by_user_id' => $userId,
+            'last_attempted_at' => $now,
+            'next_retry_at' => null,
+            'escalated_at' => null,
+        ]);
+
+        Appointment::query()
+            ->whereKey($reminder->appointment_id)
+            ->update([
+                'whatsapp_status' => Appointment::WHATSAPP_STATUS_SENT,
+                'whatsapp_marked_at' => $now,
+                'whatsapp_marked_by_user_id' => $userId,
+            ]);
+
+        return $reminder->refresh()->load('appointment');
+    }
+
+    public function openReminder(AppointmentReminder $reminder): AppointmentReminder
+    {
+        if ($this->canTransition($reminder->status, AppointmentReminder::STATUS_READY)) {
+            $reminder->update([
+                'opened_at' => now()->utc(),
+                'status' => AppointmentReminder::STATUS_READY,
+            ]);
+        }
+
+        return $reminder->refresh()->load('appointment');
+    }
+
+    public function cancelReminder(AppointmentReminder $reminder): AppointmentReminder
+    {
+        if ($this->canTransition($reminder->status, AppointmentReminder::STATUS_CANCELLED)) {
+            $reminder->update(['status' => AppointmentReminder::STATUS_CANCELLED]);
+        }
+
+        return $reminder->refresh()->load('appointment');
+    }
+
+    private function buildListQuery(int $workspaceId, ?int $trainerUserId, array $filters): Builder
+    {
+        $status = (string) ($filters['status'] ?? 'all');
+
+        return AppointmentReminder::query()
+            ->where('workspace_id', $workspaceId)
+            ->with('appointment')
+            ->whereHas('appointment', function ($query) use ($trainerUserId, $filters) {
+                if ($trainerUserId) {
+                    $query->where('trainer_user_id', $trainerUserId);
+                }
+                if (isset($filters['trainer_id'])) {
+                    $query->where('trainer_user_id', (int) $filters['trainer_id']);
+                }
+                if (isset($filters['student_id'])) {
+                    $query->where('student_id', (int) $filters['student_id']);
+                }
+            })
+            ->when($status !== 'all', fn ($query) => $query->where('status', $status))
+            ->when(isset($filters['from']), fn ($query) => $query->where('scheduled_for', '>=', Carbon::parse($filters['from'])->utc()))
+            ->when(isset($filters['to']), fn ($query) => $query->where('scheduled_for', '<=', Carbon::parse($filters['to'])->utc()))
+            ->when((bool) ($filters['escalated_only'] ?? false), fn ($query) => $query->whereNotNull('escalated_at'))
+            ->when((bool) ($filters['retry_due_only'] ?? false), fn ($query) => $query->whereNotNull('next_retry_at')->where('next_retry_at', '<=', now()->utc()));
+    }
 
     /**
      * @return list<int>

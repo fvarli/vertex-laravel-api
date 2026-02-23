@@ -7,11 +7,9 @@ use App\Http\Requests\Api\V1\Reminder\BulkReminderActionRequest;
 use App\Http\Requests\Api\V1\Reminder\ListReminderRequest;
 use App\Http\Requests\Api\V1\Reminder\RequeueReminderRequest;
 use App\Http\Resources\AppointmentReminderResource;
-use App\Models\Appointment;
 use App\Models\AppointmentReminder;
 use App\Services\AppointmentReminderService;
 use App\Services\DomainAuditService;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -37,22 +35,23 @@ class ReminderController extends BaseController
 
     public function index(ListReminderRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-        $perPage = (int) ($validated['per_page'] ?? 15);
+        $workspaceId = (int) $request->attributes->get('workspace_id');
+        $workspaceRole = (string) $request->attributes->get('workspace_role');
+        $trainerUserId = $workspaceRole !== 'owner_admin' ? $request->user()->id : null;
 
-        $reminders = $this->buildReminderQuery($request)
-            ->orderBy('scheduled_for')
-            ->paginate($perPage);
+        $reminders = $this->reminderService->listReminders($workspaceId, $trainerUserId, $request->validated());
 
         return $this->sendResponse(AppointmentReminderResource::collection($reminders)->response()->getData(true));
     }
 
     public function exportCsv(ListReminderRequest $request): StreamedResponse
     {
+        $workspaceId = (int) $request->attributes->get('workspace_id');
+        $workspaceRole = (string) $request->attributes->get('workspace_role');
+        $trainerUserId = $workspaceRole !== 'owner_admin' ? $request->user()->id : null;
+
         $fileName = 'reminders_export_'.now()->format('Ymd_His').'.csv';
-        $rows = $this->buildReminderQuery($request)
-            ->orderBy('scheduled_for')
-            ->get();
+        $rows = $this->reminderService->listForExport($workspaceId, $trainerUserId, $request->validated());
 
         $response = response()->streamDownload(function () use ($rows) {
             $handle = fopen('php://output', 'w');
@@ -95,14 +94,7 @@ class ReminderController extends BaseController
         $this->authorize('update', $reminder);
 
         $before = $reminder->toArray();
-        if ($this->reminderService->canTransition($reminder->status, AppointmentReminder::STATUS_READY)) {
-            $reminder->update([
-                'opened_at' => now()->utc(),
-                'status' => AppointmentReminder::STATUS_READY,
-            ]);
-        }
-
-        $reminder = $reminder->refresh()->load('appointment');
+        $reminder = $this->reminderService->openReminder($reminder);
 
         $this->auditService->record(
             request: request(),
@@ -121,27 +113,7 @@ class ReminderController extends BaseController
         $this->authorize('update', $reminder);
 
         $before = $reminder->toArray();
-        $now = now()->utc();
-        $userId = request()->user()->id;
-
-        $reminder->update([
-            'status' => AppointmentReminder::STATUS_SENT,
-            'marked_sent_at' => $now,
-            'marked_sent_by_user_id' => $userId,
-            'last_attempted_at' => $now,
-            'next_retry_at' => null,
-            'escalated_at' => null,
-        ]);
-
-        Appointment::query()
-            ->whereKey($reminder->appointment_id)
-            ->update([
-                'whatsapp_status' => Appointment::WHATSAPP_STATUS_SENT,
-                'whatsapp_marked_at' => $now,
-                'whatsapp_marked_by_user_id' => $userId,
-            ]);
-
-        $reminder = $reminder->refresh()->load('appointment');
+        $reminder = $this->reminderService->markSent($reminder, request()->user()->id);
 
         $this->auditService->record(
             request: request(),
@@ -160,10 +132,7 @@ class ReminderController extends BaseController
         $this->authorize('update', $reminder);
 
         $before = $reminder->toArray();
-        if ($this->reminderService->canTransition($reminder->status, AppointmentReminder::STATUS_CANCELLED)) {
-            $reminder->update(['status' => AppointmentReminder::STATUS_CANCELLED]);
-        }
-        $reminder = $reminder->refresh()->load('appointment');
+        $reminder = $this->reminderService->cancelReminder($reminder);
 
         $this->auditService->record(
             request: request(),
@@ -215,28 +184,9 @@ class ReminderController extends BaseController
             $before = $reminder->toArray();
 
             if ($action === 'mark-sent') {
-                $now = now()->utc();
-                $userId = $request->user()->id;
-                $reminder->update([
-                    'status' => AppointmentReminder::STATUS_SENT,
-                    'marked_sent_at' => $now,
-                    'marked_sent_by_user_id' => $userId,
-                    'last_attempted_at' => $now,
-                    'next_retry_at' => null,
-                    'escalated_at' => null,
-                ]);
-
-                Appointment::query()
-                    ->whereKey($reminder->appointment_id)
-                    ->update([
-                        'whatsapp_status' => Appointment::WHATSAPP_STATUS_SENT,
-                        'whatsapp_marked_at' => $now,
-                        'whatsapp_marked_by_user_id' => $userId,
-                    ]);
+                $reminder = $this->reminderService->markSent($reminder, $request->user()->id);
             } elseif ($action === 'cancel') {
-                if ($this->reminderService->canTransition($reminder->status, AppointmentReminder::STATUS_CANCELLED)) {
-                    $reminder->update(['status' => AppointmentReminder::STATUS_CANCELLED]);
-                }
+                $reminder = $this->reminderService->cancelReminder($reminder);
             } elseif ($action === 'requeue') {
                 $reminder = $this->reminderService->requeue($reminder, $validated['failure_reason'] ?? null);
             }
@@ -262,32 +212,4 @@ class ReminderController extends BaseController
         ], __('api.reminder.bulk_applied'));
     }
 
-    private function buildReminderQuery(ListReminderRequest $request)
-    {
-        $validated = $request->validated();
-        $workspaceId = (int) $request->attributes->get('workspace_id');
-        $workspaceRole = (string) $request->attributes->get('workspace_role');
-        $user = $request->user();
-        $status = (string) ($validated['status'] ?? 'all');
-
-        return AppointmentReminder::query()
-            ->where('workspace_id', $workspaceId)
-            ->with('appointment')
-            ->whereHas('appointment', function ($query) use ($workspaceRole, $user, $validated) {
-                if ($workspaceRole !== 'owner_admin') {
-                    $query->where('trainer_user_id', $user->id);
-                }
-                if (isset($validated['trainer_id'])) {
-                    $query->where('trainer_user_id', (int) $validated['trainer_id']);
-                }
-                if (isset($validated['student_id'])) {
-                    $query->where('student_id', (int) $validated['student_id']);
-                }
-            })
-            ->when($status !== 'all', fn ($query) => $query->where('status', $status))
-            ->when(isset($validated['from']), fn ($query) => $query->where('scheduled_for', '>=', Carbon::parse($validated['from'])->utc()))
-            ->when(isset($validated['to']), fn ($query) => $query->where('scheduled_for', '<=', Carbon::parse($validated['to'])->utc()))
-            ->when((bool) ($validated['escalated_only'] ?? false), fn ($query) => $query->whereNotNull('escalated_at'))
-            ->when((bool) ($validated['retry_due_only'] ?? false), fn ($query) => $query->whereNotNull('next_retry_at')->where('next_retry_at', '<=', now()->utc()));
-    }
 }

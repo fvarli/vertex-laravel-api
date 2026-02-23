@@ -584,4 +584,109 @@ class AppointmentReminderServiceTest extends TestCase
 
         $this->assertEquals(AppointmentReminder::STATUS_SENT, $result->status);
     }
+
+    // ── listReminders ─────────────────────────────────────────
+
+    public function test_list_reminders_returns_paginated_results(): void
+    {
+        $appointment = $this->createAppointment();
+
+        foreach ([1, 2, 3] as $i) {
+            AppointmentReminder::factory()->create([
+                'workspace_id' => $this->workspace->id,
+                'appointment_id' => $appointment->id,
+                'status' => AppointmentReminder::STATUS_PENDING,
+                'scheduled_for' => now()->addHours($i),
+            ]);
+        }
+
+        $result = $this->service->listReminders($this->workspace->id, null, ['per_page' => 2]);
+
+        $this->assertCount(2, $result->items());
+        $this->assertEquals(3, $result->total());
+    }
+
+    public function test_list_reminders_scopes_by_trainer(): void
+    {
+        $appointment = $this->createAppointment();
+
+        AppointmentReminder::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'appointment_id' => $appointment->id,
+            'status' => AppointmentReminder::STATUS_PENDING,
+        ]);
+
+        $otherTrainer = User::factory()->trainer()->create();
+        $otherStudent = Student::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $otherTrainer->id,
+        ]);
+        $otherAppointment = Appointment::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $otherTrainer->id,
+            'student_id' => $otherStudent->id,
+        ]);
+        AppointmentReminder::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'appointment_id' => $otherAppointment->id,
+            'status' => AppointmentReminder::STATUS_PENDING,
+        ]);
+
+        $result = $this->service->listReminders($this->workspace->id, $this->trainer->id, []);
+
+        $this->assertCount(1, $result->items());
+    }
+
+    // ── markSent ──────────────────────────────────────────────
+
+    public function test_mark_sent_updates_reminder_and_appointment(): void
+    {
+        $appointment = $this->createAppointment();
+        $reminder = AppointmentReminder::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'appointment_id' => $appointment->id,
+            'status' => AppointmentReminder::STATUS_READY,
+        ]);
+
+        $result = $this->service->markSent($reminder, $this->trainer->id);
+
+        $this->assertEquals(AppointmentReminder::STATUS_SENT, $result->status);
+        $this->assertNotNull($result->marked_sent_at);
+
+        $appointment->refresh();
+        $this->assertEquals(Appointment::WHATSAPP_STATUS_SENT, $appointment->whatsapp_status);
+    }
+
+    // ── openReminder ──────────────────────────────────────────
+
+    public function test_open_reminder_transitions_to_ready(): void
+    {
+        $appointment = $this->createAppointment();
+        $reminder = AppointmentReminder::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'appointment_id' => $appointment->id,
+            'status' => AppointmentReminder::STATUS_PENDING,
+        ]);
+
+        $result = $this->service->openReminder($reminder);
+
+        $this->assertEquals(AppointmentReminder::STATUS_READY, $result->status);
+        $this->assertNotNull($result->opened_at);
+    }
+
+    // ── cancelReminder ────────────────────────────────────────
+
+    public function test_cancel_reminder_transitions_to_cancelled(): void
+    {
+        $appointment = $this->createAppointment();
+        $reminder = AppointmentReminder::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'appointment_id' => $appointment->id,
+            'status' => AppointmentReminder::STATUS_PENDING,
+        ]);
+
+        $result = $this->service->cancelReminder($reminder);
+
+        $this->assertEquals(AppointmentReminder::STATUS_CANCELLED, $result->status);
+    }
 }
