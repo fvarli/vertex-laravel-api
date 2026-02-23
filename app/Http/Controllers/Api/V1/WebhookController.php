@@ -9,42 +9,27 @@ use App\Models\WebhookEndpoint;
 use App\Services\WebhookService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class WebhookController extends BaseController
 {
+    public function __construct(private readonly WebhookService $webhookService) {}
+
     public function index(Request $request): JsonResponse
     {
-        $workspaceId = $request->attributes->get('workspace_id');
+        $workspaceId = (int) $request->attributes->get('workspace_id');
 
-        $webhooks = WebhookEndpoint::query()
-            ->where('workspace_id', $workspaceId)
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(fn ($w) => [
-                'id' => $w->id,
-                'url' => $w->url,
-                'events' => $w->events,
-                'is_active' => $w->is_active,
-                'failure_count' => $w->failure_count,
-                'last_triggered_at' => $w->last_triggered_at?->toIso8601String(),
-                'created_at' => $w->created_at->toIso8601String(),
-            ]);
-
-        return $this->sendResponse($webhooks);
+        return $this->sendResponse($this->webhookService->list($workspaceId));
     }
 
     public function store(StoreWebhookRequest $request): JsonResponse
     {
-        $workspaceId = $request->attributes->get('workspace_id');
+        $workspaceId = (int) $request->attributes->get('workspace_id');
 
-        $webhook = WebhookEndpoint::create([
-            'workspace_id' => $workspaceId,
-            'url' => $request->validated('url'),
-            'events' => $request->validated('events'),
-            'secret' => Str::random(48),
-            'is_active' => true,
-        ]);
+        $webhook = $this->webhookService->create(
+            $workspaceId,
+            $request->validated('url'),
+            $request->validated('events'),
+        );
 
         return $this->sendResponse([
             'id' => $webhook->id,
@@ -58,13 +43,13 @@ class WebhookController extends BaseController
 
     public function update(UpdateWebhookRequest $request, WebhookEndpoint $webhook): JsonResponse
     {
-        $workspaceId = $request->attributes->get('workspace_id');
+        $workspaceId = (int) $request->attributes->get('workspace_id');
 
-        if ($webhook->workspace_id !== (int) $workspaceId) {
+        if ($webhook->workspace_id !== $workspaceId) {
             return $this->sendError(__('api.forbidden'), [], 403);
         }
 
-        $webhook->update($request->validated());
+        $webhook = $this->webhookService->update($webhook, $request->validated());
 
         return $this->sendResponse([
             'id' => $webhook->id,
@@ -76,13 +61,13 @@ class WebhookController extends BaseController
 
     public function destroy(Request $request, WebhookEndpoint $webhook): JsonResponse
     {
-        $workspaceId = $request->attributes->get('workspace_id');
+        $workspaceId = (int) $request->attributes->get('workspace_id');
 
-        if ($webhook->workspace_id !== (int) $workspaceId) {
+        if ($webhook->workspace_id !== $workspaceId) {
             return $this->sendError(__('api.forbidden'), [], 403);
         }
 
-        $webhook->delete();
+        $this->webhookService->delete($webhook);
 
         return $this->sendResponse([], __('api.deleted'));
     }
