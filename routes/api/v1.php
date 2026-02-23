@@ -113,7 +113,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         // Student routes
         Route::prefix('students')->name('v1.students.')->controller(StudentController::class)->group(function () {
             Route::post('/', 'store')->middleware('workspace.approved')->name('store');
-            Route::get('/', 'index')->name('index');
+            Route::get('/', 'index')->middleware('cache.headers:30')->name('index');
             Route::get('/{student}', 'show')->name('show');
             Route::get('/{student}/timeline', 'timeline')->name('timeline');
             Route::put('/{student}', 'update')->middleware('workspace.approved')->name('update');
@@ -143,7 +143,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
         // Appointment and calendar routes
         Route::prefix('appointments')->name('v1.appointments.')->controller(AppointmentController::class)->group(function () {
             Route::post('/', 'store')->middleware(['workspace.approved', 'idempotent.appointments'])->name('store');
-            Route::get('/', 'index')->name('index');
+            Route::get('/', 'index')->middleware('cache.headers:30')->name('index');
             Route::prefix('series')->name('series.')->controller(AppointmentSeriesController::class)->group(function () {
                 Route::post('/', 'store')->middleware(['workspace.approved', 'idempotent.appointments'])->name('store');
                 Route::get('/', 'index')->name('index');
@@ -165,7 +165,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
             Route::patch('/{reminder}/requeue', 'requeue')->middleware('workspace.approved')->name('requeue');
             Route::patch('/{reminder}/cancel', 'cancel')->middleware('workspace.approved')->name('cancel');
         });
-        Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->name('v1.dashboard.summary');
+        Route::get('/dashboard/summary', [DashboardController::class, 'summary'])->middleware('cache.headers:120')->name('v1.dashboard.summary');
         Route::prefix('trainers')->name('v1.trainers.')->controller(TrainerController::class)->group(function () {
             Route::get('/overview', 'overview')->name('overview');
             Route::post('/', 'store')->middleware('workspace.approved')->name('store');

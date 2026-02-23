@@ -9,6 +9,7 @@ use App\Http\Middleware\EnsureWorkspaceContext;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\RequestIdMiddleware;
 use App\Http\Middleware\SecurityHeadersMiddleware;
+use App\Http\Middleware\SetCacheHeaders;
 use App\Http\Middleware\SetLocaleMiddleware;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -46,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'workspace.approved' => EnsureWorkspaceApproved::class,
             'platform.admin' => EnsurePlatformAdmin::class,
             'idempotent.appointments' => EnforceIdempotencyForAppointments::class,
+            'cache.headers' => SetCacheHeaders::class,
         ]);
         $middleware->redirectGuestsTo(function (Request $request) {
             if ($request->is('api/*')) {
