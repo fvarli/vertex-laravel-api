@@ -5,11 +5,45 @@ namespace App\Services;
 use App\Exceptions\AppointmentConflictException;
 use App\Models\Appointment;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentService
 {
     public function __construct(private readonly AppointmentReminderService $appointmentReminderService) {}
+
+    public function list(int $workspaceId, ?int $trainerUserId, array $filters): LengthAwarePaginator
+    {
+        $perPage = (int) ($filters['per_page'] ?? 15);
+        $search = trim((string) ($filters['search'] ?? ''));
+        $from = $filters['from'] ?? $filters['date_from'] ?? null;
+        $to = $filters['to'] ?? $filters['date_to'] ?? null;
+        $sort = (string) ($filters['sort'] ?? 'starts_at');
+        $direction = (string) ($filters['direction'] ?? 'desc');
+
+        return Appointment::query()
+            ->with(['student', 'trainer', 'reminders'])
+            ->where('workspace_id', $workspaceId)
+            ->when($trainerUserId, fn ($q) => $q->where('trainer_user_id', $trainerUserId))
+            ->when($from, fn ($q, $fromValue) => $q->where('starts_at', '>=', $fromValue))
+            ->when($to, fn ($q, $toValue) => $q->where('starts_at', '<=', $toValue))
+            ->when(isset($filters['status']), fn ($q) => $q->where('status', $filters['status']))
+            ->when(isset($filters['whatsapp_status']) && $filters['whatsapp_status'] !== 'all', fn ($q) => $q->where('whatsapp_status', $filters['whatsapp_status']))
+            ->when(isset($filters['trainer_id']), fn ($q) => $q->where('trainer_user_id', (int) $filters['trainer_id']))
+            ->when(isset($filters['student_id']), fn ($q) => $q->where('student_id', (int) $filters['student_id']))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('location', 'like', "%{$search}%")
+                        ->orWhere('notes', 'like', "%{$search}%")
+                        ->orWhereHas('student', function ($studentQuery) use ($search) {
+                            $studentQuery->where('full_name', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->orderBy($sort, $direction)
+            ->paginate($perPage);
+    }
 
     public function create(int $workspaceId, int $trainerUserId, int $studentId, array $data): Appointment
     {

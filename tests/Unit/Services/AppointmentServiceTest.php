@@ -42,6 +42,71 @@ class AppointmentServiceTest extends TestCase
         ]);
     }
 
+    // ── List ───────────────────────────────────────────────────
+
+    public function test_list_returns_paginated_appointments(): void
+    {
+        Appointment::factory()->count(3)->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $this->trainer->id,
+            'student_id' => $this->student->id,
+            'status' => Appointment::STATUS_PLANNED,
+        ]);
+
+        $result = $this->service->list($this->workspace->id, null, ['per_page' => 2]);
+
+        $this->assertCount(2, $result->items());
+        $this->assertEquals(3, $result->total());
+    }
+
+    public function test_list_scopes_by_trainer(): void
+    {
+        Appointment::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $this->trainer->id,
+            'student_id' => $this->student->id,
+            'status' => Appointment::STATUS_PLANNED,
+        ]);
+
+        $otherTrainer = User::factory()->trainer()->create();
+        $this->workspace->users()->attach($otherTrainer->id, ['role' => 'trainer', 'is_active' => true]);
+        $otherStudent = Student::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $otherTrainer->id,
+        ]);
+        Appointment::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $otherTrainer->id,
+            'student_id' => $otherStudent->id,
+            'status' => Appointment::STATUS_PLANNED,
+        ]);
+
+        $result = $this->service->list($this->workspace->id, $this->trainer->id, []);
+
+        $this->assertCount(1, $result->items());
+    }
+
+    public function test_list_filters_by_status(): void
+    {
+        Appointment::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $this->trainer->id,
+            'student_id' => $this->student->id,
+            'status' => Appointment::STATUS_PLANNED,
+        ]);
+        Appointment::factory()->create([
+            'workspace_id' => $this->workspace->id,
+            'trainer_user_id' => $this->trainer->id,
+            'student_id' => $this->student->id,
+            'status' => Appointment::STATUS_CANCELLED,
+        ]);
+
+        $result = $this->service->list($this->workspace->id, null, ['status' => Appointment::STATUS_PLANNED]);
+
+        $this->assertCount(1, $result->items());
+        $this->assertEquals(Appointment::STATUS_PLANNED, $result->items()[0]->status);
+    }
+
     // ── Conflict Detection ─────────────────────────────────────
 
     public function test_create_detects_trainer_time_conflict(): void
