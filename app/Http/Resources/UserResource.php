@@ -26,6 +26,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'avatar' => $this->avatar ? Storage::disk('public')->url($this->avatar) : null,
+            'avatar_thumb_url' => $this->avatar_thumb ? Storage::disk('public')->url($this->avatar_thumb) : null,
             'is_active' => $this->is_active,
             'system_role' => $accessContext['system_role'],
             'active_workspace_role' => $accessContext['active_workspace_role'],
