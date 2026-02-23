@@ -6,37 +6,24 @@ use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\DeviceToken\StoreDeviceTokenRequest;
 use App\Http\Resources\Api\V1\DeviceTokenResource;
 use App\Models\DeviceToken;
+use App\Services\DeviceTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DeviceTokenController extends BaseController
 {
+    public function __construct(private readonly DeviceTokenService $deviceTokenService) {}
+
     public function index(Request $request): JsonResponse
     {
-        $tokens = DeviceToken::query()
-            ->where('user_id', $request->user()->id)
-            ->orderByDesc('created_at')
-            ->get();
+        $tokens = $this->deviceTokenService->listForUser($request->user()->id);
 
         return $this->sendResponse(DeviceTokenResource::collection($tokens));
     }
 
     public function store(StoreDeviceTokenRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-
-        $token = DeviceToken::query()->updateOrCreate(
-            [
-                'user_id' => $request->user()->id,
-                'token' => $validated['token'],
-            ],
-            [
-                'platform' => $validated['platform'],
-                'device_name' => $validated['device_name'] ?? null,
-                'is_active' => true,
-                'last_used_at' => now(),
-            ],
-        );
+        $token = $this->deviceTokenService->register($request->user()->id, $request->validated());
 
         return $this->sendResponse(
             new DeviceTokenResource($token),
@@ -51,7 +38,7 @@ class DeviceTokenController extends BaseController
             return $this->sendError(__('api.forbidden'), [], 403);
         }
 
-        $device->delete();
+        $this->deviceTokenService->delete($device);
 
         return $this->sendResponse([], __('api.device_token.deleted'));
     }
