@@ -17,6 +17,7 @@ use App\Services\DomainAuditService;
 use App\Services\ProgramService;
 use Illuminate\Http\JsonResponse;
 
+
 class ProgramController extends BaseController
 {
     private const AUDIT_FIELDS = ['title', 'status', 'week_start_date', 'trainer_user_id', 'student_id'];
@@ -32,25 +33,8 @@ class ProgramController extends BaseController
     public function index(ListProgramRequest $request, Student $student): JsonResponse
     {
         $this->authorize('view', $student);
-        $validated = $request->validated();
-        $perPage = (int) ($validated['per_page'] ?? 100);
-        $search = trim((string) ($validated['search'] ?? ''));
-        $status = (string) ($validated['status'] ?? 'all');
-        $sort = (string) ($validated['sort'] ?? 'id');
-        $direction = (string) ($validated['direction'] ?? 'desc');
 
-        $programs = Program::query()
-            ->with('items')
-            ->where('student_id', $student->id)
-            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($inner) use ($search) {
-                    $inner->where('title', 'like', "%{$search}%")
-                        ->orWhere('goal', 'like', "%{$search}%");
-                });
-            })
-            ->orderBy($sort, $direction)
-            ->paginate($perPage);
+        $programs = $this->programService->listPrograms($student->id, $request->validated());
 
         return $this->sendResponse(ProgramResource::collection($programs)->response()->getData(true));
     }
