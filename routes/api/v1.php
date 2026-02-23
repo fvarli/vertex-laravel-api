@@ -152,6 +152,7 @@ Route::middleware(['auth:sanctum', 'user.active'])->group(function () {
                 Route::put('/{series}', 'update')->middleware('workspace.approved')->name('update');
                 Route::patch('/{series}/status', 'updateStatus')->middleware('workspace.approved')->name('status');
             });
+            Route::patch('/bulk-status', 'bulkUpdateStatus')->middleware('workspace.approved')->name('bulk-status');
             Route::patch('/{appointment}/whatsapp-status', 'updateWhatsappStatus')->middleware('workspace.approved')->name('whatsapp-status');
             Route::get('/{appointment}', 'show')->middleware('sparse.fields')->name('show');
             Route::put('/{appointment}', 'update')->middleware('workspace.approved')->name('update');

@@ -97,6 +97,7 @@ return [
         'created' => 'Appointment created successfully.',
         'updated' => 'Appointment updated successfully.',
         'status_updated' => 'Appointment status updated successfully.',
+        'bulk_status_updated' => 'Appointment statuses updated successfully.',
         'whatsapp_status_updated' => 'Appointment WhatsApp status updated successfully.',
         'series_created' => 'Appointment series created successfully.',
         'series_updated' => 'Appointment series updated successfully.',

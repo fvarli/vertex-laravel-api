@@ -18,6 +18,7 @@ class ListAppointmentRequest extends FormRequest
         return [
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'cursor' => ['nullable', 'string'],
             'search' => ['nullable', 'string', 'max:120'],
             'status' => ['nullable', 'string', Rule::in([
                 Appointment::STATUS_PLANNED,

@@ -2,17 +2,21 @@
 
 namespace App\Services;
 
+use App\Events\AppointmentCreated;
+use App\Events\AppointmentStatusChanged;
 use App\Exceptions\AppointmentConflictException;
 use App\Models\Appointment;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentService
 {
     public function __construct(private readonly AppointmentReminderService $appointmentReminderService) {}
 
-    public function list(int $workspaceId, ?int $trainerUserId, array $filters): LengthAwarePaginator
+    public function list(int $workspaceId, ?int $trainerUserId, array $filters): LengthAwarePaginator|CursorPaginator
     {
         $perPage = (int) ($filters['per_page'] ?? 15);
         $search = trim((string) ($filters['search'] ?? ''));
@@ -20,8 +24,9 @@ class AppointmentService
         $to = $filters['to'] ?? $filters['date_to'] ?? null;
         $sort = (string) ($filters['sort'] ?? 'starts_at');
         $direction = (string) ($filters['direction'] ?? 'desc');
+        $useCursor = isset($filters['cursor']);
 
-        return Appointment::query()
+        $query = Appointment::query()
             ->with(['student', 'trainer', 'reminders'])
             ->where('workspace_id', $workspaceId)
             ->when($trainerUserId, fn ($q) => $q->where('trainer_user_id', $trainerUserId))
@@ -41,36 +46,43 @@ class AppointmentService
                         });
                 });
             })
-            ->orderBy($sort, $direction)
-            ->paginate($perPage);
+            ->orderBy($sort, $direction);
+
+        return $useCursor
+            ? $query->cursorPaginate($perPage)
+            : $query->paginate($perPage);
     }
 
     public function create(int $workspaceId, int $trainerUserId, int $studentId, array $data): Appointment
     {
-        $startsAt = Carbon::parse($data['starts_at'])->utc();
-        $endsAt = Carbon::parse($data['ends_at'])->utc();
+        return DB::transaction(function () use ($workspaceId, $trainerUserId, $studentId, $data) {
+            $startsAt = Carbon::parse($data['starts_at'])->utc();
+            $endsAt = Carbon::parse($data['ends_at'])->utc();
 
-        $this->assertNoConflict($workspaceId, $trainerUserId, $studentId, $startsAt, $endsAt);
+            $this->assertNoConflict($workspaceId, $trainerUserId, $studentId, $startsAt, $endsAt);
 
-        $appointment = Appointment::query()->create([
-            'series_id' => $data['series_id'] ?? null,
-            'series_occurrence_date' => $data['series_occurrence_date'] ?? null,
-            'is_series_exception' => (bool) ($data['is_series_exception'] ?? false),
-            'series_edit_scope_applied' => $data['series_edit_scope_applied'] ?? null,
-            'workspace_id' => $workspaceId,
-            'trainer_user_id' => $trainerUserId,
-            'student_id' => $studentId,
-            'starts_at' => $startsAt,
-            'ends_at' => $endsAt,
-            'status' => Appointment::STATUS_PLANNED,
-            'location' => $data['location'] ?? null,
-            'notes' => $data['notes'] ?? null,
-        ])->load(['student', 'trainer']);
+            $appointment = Appointment::query()->create([
+                'series_id' => $data['series_id'] ?? null,
+                'series_occurrence_date' => $data['series_occurrence_date'] ?? null,
+                'is_series_exception' => (bool) ($data['is_series_exception'] ?? false),
+                'series_edit_scope_applied' => $data['series_edit_scope_applied'] ?? null,
+                'workspace_id' => $workspaceId,
+                'trainer_user_id' => $trainerUserId,
+                'student_id' => $studentId,
+                'starts_at' => $startsAt,
+                'ends_at' => $endsAt,
+                'status' => Appointment::STATUS_PLANNED,
+                'location' => $data['location'] ?? null,
+                'notes' => $data['notes'] ?? null,
+            ])->load(['student', 'trainer']);
 
-        $workspaceReminderPolicy = $appointment->workspace?->reminder_policy;
-        $this->appointmentReminderService->syncForAppointment($appointment, is_array($workspaceReminderPolicy) ? $workspaceReminderPolicy : null);
+            $workspaceReminderPolicy = $appointment->workspace?->reminder_policy;
+            $this->appointmentReminderService->syncForAppointment($appointment, is_array($workspaceReminderPolicy) ? $workspaceReminderPolicy : null);
 
-        return $appointment;
+            AppointmentCreated::dispatch($appointment);
+
+            return $appointment;
+        });
     }
 
     public function update(Appointment $appointment, array $data): Appointment
@@ -123,7 +135,35 @@ class AppointmentService
             $this->appointmentReminderService->syncForAppointment($appointment, is_array($workspaceReminderPolicy) ? $workspaceReminderPolicy : null);
         }
 
+        AppointmentStatusChanged::dispatch($appointment, $status);
+
         return $appointment;
+    }
+
+    public function bulkUpdateStatus(array $ids, string $status, int $workspaceId, ?int $trainerUserId): array
+    {
+        $appointments = Appointment::query()
+            ->whereIn('id', $ids)
+            ->where('workspace_id', $workspaceId)
+            ->when($trainerUserId, fn ($q) => $q->where('trainer_user_id', $trainerUserId))
+            ->get();
+
+        $updated = [];
+        $skipped = [];
+
+        foreach ($appointments as $appointment) {
+            try {
+                $updated[] = $this->updateStatus($appointment, $status);
+            } catch (\Illuminate\Validation\ValidationException) {
+                $skipped[] = $appointment->id;
+            }
+        }
+
+        return [
+            'updated' => $updated,
+            'updated_count' => count($updated),
+            'skipped_ids' => $skipped,
+        ];
     }
 
     private function assertStatusTransitionAllowed(Appointment $appointment, string $nextStatus): void

@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Exceptions\AppointmentConflictException;
+use App\Enums\WorkspaceRole;
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Requests\Api\V1\Appointment\BulkUpdateAppointmentStatusRequest;
 use App\Http\Requests\Api\V1\Appointment\ListAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\StoreAppointmentRequest;
 use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentRequest;
@@ -11,9 +12,6 @@ use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentStatusRequest;
 use App\Http\Requests\Api\V1\Appointment\UpdateAppointmentWhatsappStatusRequest;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
-use App\Models\User;
-use App\Notifications\AppointmentCancelledNotification;
-use App\Notifications\AppointmentCreatedNotification;
 use App\Services\AppointmentSeriesService;
 use App\Services\AppointmentService;
 use App\Services\DomainAuditService;
@@ -38,7 +36,7 @@ class AppointmentController extends BaseController
     {
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = $request->attributes->get('workspace_role');
-        $trainerUserId = $workspaceRole !== 'owner_admin' ? $request->user()->id : null;
+        $trainerUserId = $workspaceRole !== WorkspaceRole::OwnerAdmin->value ? $request->user()->id : null;
 
         $appointments = $this->appointmentService->list($workspaceId, $trainerUserId, $request->validated());
 
@@ -56,35 +54,29 @@ class AppointmentController extends BaseController
 
         $trainerId = $request->user()->id;
 
-        if ($workspaceRole !== 'owner_admin' && isset($data['trainer_user_id'])) {
+        if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value && isset($data['trainer_user_id'])) {
             return $this->sendError(__('api.forbidden'), [], 403);
         }
 
-        if ($workspaceRole === 'owner_admin' && isset($data['trainer_user_id'])) {
+        if ($workspaceRole === WorkspaceRole::OwnerAdmin->value && isset($data['trainer_user_id'])) {
             $this->workspaceContext->assertTrainerInWorkspace((int) $data['trainer_user_id'], $workspaceId);
             $trainerId = (int) $data['trainer_user_id'];
         }
 
         $student = $this->workspaceContext->assertStudentInWorkspace((int) $data['student_id'], $workspaceId);
 
-        if ($workspaceRole !== 'owner_admin' && (int) $student->trainer_user_id !== (int) $trainerId) {
+        if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value && (int) $student->trainer_user_id !== (int) $trainerId) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'student_id' => [__('api.workspace.membership_required')],
             ]);
         }
 
-        try {
-            $appointment = $this->appointmentService->create(
-                workspaceId: $workspaceId,
-                trainerUserId: $trainerId,
-                studentId: (int) $data['student_id'],
-                data: $data,
-            );
-        } catch (AppointmentConflictException $e) {
-            return $this->sendError($e->getMessage(), [
-                'code' => ['time_slot_conflict'],
-            ], 422);
-        }
+        $appointment = $this->appointmentService->create(
+            workspaceId: $workspaceId,
+            trainerUserId: $trainerId,
+            studentId: (int) $data['student_id'],
+            data: $data,
+        );
 
         $this->auditService->record(
             request: $request,
@@ -93,12 +85,6 @@ class AppointmentController extends BaseController
             after: $appointment->toArray(),
             allowedFields: self::AUDIT_FIELDS,
         );
-
-        $trainer = User::query()->find($appointment->trainer_user_id);
-        if ($trainer) {
-            $appointment->loadMissing('student');
-            $trainer->notify(new AppointmentCreatedNotification($appointment));
-        }
 
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.created'), 201);
     }
@@ -127,7 +113,7 @@ class AppointmentController extends BaseController
         unset($data['edit_scope']);
 
         if (isset($data['trainer_user_id'])) {
-            if ($workspaceRole !== 'owner_admin') {
+            if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value) {
                 return $this->sendError(__('api.forbidden'), [], 403);
             }
 
@@ -139,69 +125,63 @@ class AppointmentController extends BaseController
 
             $trainerIdForAccess = (int) ($data['trainer_user_id'] ?? $appointment->trainer_user_id);
 
-            if ($workspaceRole !== 'owner_admin' && (int) $student->trainer_user_id !== $trainerIdForAccess) {
+            if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value && (int) $student->trainer_user_id !== $trainerIdForAccess) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'student_id' => [__('api.workspace.membership_required')],
                 ]);
             }
         }
 
-        try {
-            if ($appointment->series_id && in_array($editScope, ['future', 'all'], true)) {
-                $series = $appointment->series;
+        if ($appointment->series_id && in_array($editScope, ['future', 'all'], true)) {
+            $series = $appointment->series;
 
-                if ($series) {
-                    $seriesData = [];
-                    if (array_key_exists('location', $data)) {
-                        $seriesData['location'] = $data['location'];
-                    }
-                    if (array_key_exists('notes', $data)) {
-                        $seriesData['title'] = $data['notes'];
-                    }
-                    if (array_key_exists('starts_at', $data)) {
-                        $startsAt = \Carbon\Carbon::parse($data['starts_at'])->utc();
-                        $seriesData['start_date'] = $startsAt->toDateString();
-                        $seriesData['starts_at_time'] = $startsAt->format('H:i:s');
-                    }
-                    if (array_key_exists('ends_at', $data)) {
-                        $endsAt = \Carbon\Carbon::parse($data['ends_at'])->utc();
-                        $seriesData['ends_at_time'] = $endsAt->format('H:i:s');
-                    }
+            if ($series) {
+                $seriesData = [];
+                if (array_key_exists('location', $data)) {
+                    $seriesData['location'] = $data['location'];
+                }
+                if (array_key_exists('notes', $data)) {
+                    $seriesData['title'] = $data['notes'];
+                }
+                if (array_key_exists('starts_at', $data)) {
+                    $startsAt = \Carbon\Carbon::parse($data['starts_at'])->utc();
+                    $seriesData['start_date'] = $startsAt->toDateString();
+                    $seriesData['starts_at_time'] = $startsAt->format('H:i:s');
+                }
+                if (array_key_exists('ends_at', $data)) {
+                    $endsAt = \Carbon\Carbon::parse($data['ends_at'])->utc();
+                    $seriesData['ends_at_time'] = $endsAt->format('H:i:s');
+                }
 
-                    $this->appointmentSeriesService->updateSeries(
-                        series: $series,
-                        data: $seriesData,
-                        editScope: $editScope,
-                        workspaceReminderPolicy: $request->user()?->activeWorkspace?->reminder_policy,
-                    );
+                $this->appointmentSeriesService->updateSeries(
+                    series: $series,
+                    data: $seriesData,
+                    editScope: $editScope,
+                    workspaceReminderPolicy: $request->user()?->activeWorkspace?->reminder_policy,
+                );
 
-                    $occurrenceDate = isset($data['starts_at'])
-                        ? \Carbon\Carbon::parse($data['starts_at'])->toDateString()
-                        : $appointment->series_occurrence_date?->toDateString();
+                $occurrenceDate = isset($data['starts_at'])
+                    ? \Carbon\Carbon::parse($data['starts_at'])->toDateString()
+                    : $appointment->series_occurrence_date?->toDateString();
 
-                    if ($occurrenceDate) {
-                        $replacement = Appointment::query()
-                            ->where('series_id', $series->id)
-                            ->whereDate('series_occurrence_date', $occurrenceDate)
-                            ->first();
+                if ($occurrenceDate) {
+                    $replacement = Appointment::query()
+                        ->where('series_id', $series->id)
+                        ->whereDate('series_occurrence_date', $occurrenceDate)
+                        ->first();
 
-                        if ($replacement) {
-                            $appointment = $replacement;
-                        }
-                    }
-
-                    if (! $appointment->exists) {
-                        $appointment = Appointment::query()->findOrFail($appointment->id);
+                    if ($replacement) {
+                        $appointment = $replacement;
                     }
                 }
-            }
 
-            $appointment = $this->appointmentService->update($appointment, $data);
-        } catch (AppointmentConflictException $e) {
-            return $this->sendError($e->getMessage(), [
-                'code' => ['time_slot_conflict'],
-            ], 422);
+                if (! $appointment->exists) {
+                    $appointment = Appointment::query()->findOrFail($appointment->id);
+                }
+            }
         }
+
+        $appointment = $this->appointmentService->update($appointment, $data);
 
         $this->auditService->record(
             request: $request,
@@ -235,15 +215,30 @@ class AppointmentController extends BaseController
             allowedFields: self::AUDIT_FIELDS,
         );
 
-        if ($newStatus === Appointment::STATUS_CANCELLED) {
-            $trainer = User::query()->find($appointment->trainer_user_id);
-            if ($trainer) {
-                $appointment->loadMissing('student');
-                $trainer->notify(new AppointmentCancelledNotification($appointment));
-            }
-        }
-
         return $this->sendResponse(new AppointmentResource($appointment), __('api.appointment.status_updated'));
+    }
+
+    /**
+     * Bulk update status for multiple appointments.
+     */
+    public function bulkUpdateStatus(BulkUpdateAppointmentStatusRequest $request): JsonResponse
+    {
+        $workspaceId = (int) $request->attributes->get('workspace_id');
+        $workspaceRole = $request->attributes->get('workspace_role');
+        $trainerUserId = $workspaceRole !== WorkspaceRole::OwnerAdmin->value ? $request->user()->id : null;
+
+        $data = $request->validated();
+        $result = $this->appointmentService->bulkUpdateStatus(
+            ids: $data['ids'],
+            status: $data['status'],
+            workspaceId: $workspaceId,
+            trainerUserId: $trainerUserId,
+        );
+
+        return $this->sendResponse([
+            'updated_count' => $result['updated_count'],
+            'skipped_ids' => $result['skipped_ids'],
+        ], __('api.appointment.bulk_status_updated'));
     }
 
     /**

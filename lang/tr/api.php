@@ -97,6 +97,7 @@ return [
         'created' => 'Randevu başarıyla oluşturuldu.',
         'updated' => 'Randevu başarıyla güncellendi.',
         'status_updated' => 'Randevu durumu başarıyla güncellendi.',
+        'bulk_status_updated' => 'Randevu durumları başarıyla güncellendi.',
         'whatsapp_status_updated' => 'Randevu WhatsApp durumu başarıyla güncellendi.',
         'series_created' => 'Randevu serisi başarıyla oluşturuldu.',
         'series_updated' => 'Randevu serisi başarıyla güncellendi.',
