@@ -14,6 +14,17 @@ class PushNotificationService
 
     private ?float $tokenExpiresAt = null;
 
+    private CircuitBreaker $circuitBreaker;
+
+    public function __construct()
+    {
+        $this->circuitBreaker = new CircuitBreaker(
+            service: 'fcm',
+            failureThreshold: 5,
+            recoveryTimeout: 60,
+        );
+    }
+
     public function sendToUser(User $user, string $title, string $body, array $data = []): int
     {
         $tokens = DeviceToken::query()
@@ -39,6 +50,12 @@ class PushNotificationService
             return true;
         }
 
+        if (! $this->circuitBreaker->isAvailable()) {
+            Log::warning('FCM circuit breaker open, skipping push', compact('token', 'title'));
+
+            return false;
+        }
+
         $accessToken = $this->getAccessToken();
         if (! $accessToken) {
             return false;
@@ -51,7 +68,7 @@ class PushNotificationService
             return false;
         }
 
-        try {
+        return $this->circuitBreaker->call(function () use ($token, $title, $body, $data, $accessToken, $projectId) {
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer '.$accessToken,
             ])->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", [
@@ -74,12 +91,8 @@ class PushNotificationService
                 'body' => $response->body(),
             ]);
 
-            return false;
-        } catch (\Throwable $e) {
-            Log::error('FCM send error', ['error' => $e->getMessage()]);
-
-            return false;
-        }
+            throw new \RuntimeException("FCM API returned {$response->status()}");
+        }, false);
     }
 
     protected function getAccessToken(): ?string
