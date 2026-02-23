@@ -7,22 +7,21 @@ use App\Http\Requests\Api\V1\MessageTemplate\StoreMessageTemplateRequest;
 use App\Http\Requests\Api\V1\MessageTemplate\UpdateMessageTemplateRequest;
 use App\Http\Resources\Api\V1\MessageTemplateResource;
 use App\Models\MessageTemplate;
+use App\Services\MessageTemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MessageTemplateController extends BaseController
 {
+    public function __construct(private readonly MessageTemplateService $messageTemplateService) {}
+
     public function index(Request $request): JsonResponse
     {
         $workspaceId = (int) $request->attributes->get('workspace_id');
 
-        $templates = MessageTemplate::query()
-            ->where('workspace_id', $workspaceId)
-            ->orderByDesc('is_default')
-            ->orderBy('name')
-            ->get();
-
-        return $this->sendResponse(MessageTemplateResource::collection($templates));
+        return $this->sendResponse(
+            MessageTemplateResource::collection($this->messageTemplateService->list($workspaceId))
+        );
     }
 
     public function store(StoreMessageTemplateRequest $request): JsonResponse
@@ -34,22 +33,7 @@ class MessageTemplateController extends BaseController
             return $this->sendError(__('api.forbidden'), [], 403);
         }
 
-        $validated = $request->validated();
-
-        if (! empty($validated['is_default'])) {
-            MessageTemplate::query()
-                ->where('workspace_id', $workspaceId)
-                ->where('channel', $validated['channel'] ?? 'whatsapp')
-                ->update(['is_default' => false]);
-        }
-
-        $template = MessageTemplate::query()->create([
-            'workspace_id' => $workspaceId,
-            'name' => $validated['name'],
-            'channel' => $validated['channel'] ?? 'whatsapp',
-            'body' => $validated['body'],
-            'is_default' => $validated['is_default'] ?? false,
-        ]);
+        $template = $this->messageTemplateService->create($workspaceId, $request->validated());
 
         return $this->sendResponse(
             new MessageTemplateResource($template),
@@ -71,17 +55,7 @@ class MessageTemplateController extends BaseController
             return $this->sendError(__('api.not_found'), [], 404);
         }
 
-        $validated = $request->validated();
-
-        if (! empty($validated['is_default'])) {
-            MessageTemplate::query()
-                ->where('workspace_id', $workspaceId)
-                ->where('channel', $messageTemplate->channel)
-                ->where('id', '!=', $messageTemplate->id)
-                ->update(['is_default' => false]);
-        }
-
-        $messageTemplate->update($validated);
+        $messageTemplate = $this->messageTemplateService->update($messageTemplate, $request->validated());
 
         return $this->sendResponse(
             new MessageTemplateResource($messageTemplate),
@@ -102,7 +76,7 @@ class MessageTemplateController extends BaseController
             return $this->sendError(__('api.not_found'), [], 404);
         }
 
-        $messageTemplate->delete();
+        $this->messageTemplateService->delete($messageTemplate);
 
         return $this->sendResponse([], __('api.message_template.deleted'));
     }
