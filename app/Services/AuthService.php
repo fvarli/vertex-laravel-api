@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\SystemRole;
 use App\Models\User;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Events\PasswordReset;
@@ -21,7 +22,7 @@ class AuthService
             'phone' => $data['phone'] ?? null,
             'password' => $data['password'],
             'is_active' => true,
-            'system_role' => 'workspace_user',
+            'system_role' => SystemRole::WorkspaceUser->value,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;

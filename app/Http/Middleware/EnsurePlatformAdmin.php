@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\SystemRole;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,7 +13,7 @@ class EnsurePlatformAdmin
     {
         $user = $request->user();
 
-        if (! $user || $user->system_role !== 'platform_admin') {
+        if (! $user || $user->system_role !== SystemRole::PlatformAdmin->value) {
             return response()->json([
                 'success' => false,
                 'message' => __('api.forbidden'),

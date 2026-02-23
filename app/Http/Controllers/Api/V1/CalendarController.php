@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\WorkspaceRole;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\Appointment\CalendarAvailabilityRequest;
 use App\Services\CalendarService;
@@ -22,7 +23,7 @@ class CalendarController extends BaseController
         $trainerId = $validated['trainer_id'] ?? null;
 
         if (! $trainerId) {
-            $trainerId = $workspaceRole === 'owner_admin'
+            $trainerId = $workspaceRole === WorkspaceRole::OwnerAdmin->value
                 ? null
                 : $request->user()->id;
         }

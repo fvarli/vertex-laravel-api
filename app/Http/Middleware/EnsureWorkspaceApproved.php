@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\ApprovalStatus;
+use App\Enums\SystemRole;
 use App\Models\Workspace;
 use Closure;
 use Illuminate\Http\Request;
@@ -17,7 +19,7 @@ class EnsureWorkspaceApproved
             return $next($request);
         }
 
-        if ($user->system_role === 'platform_admin') {
+        if ($user->system_role === SystemRole::PlatformAdmin->value) {
             return $next($request);
         }
 
@@ -32,7 +34,7 @@ class EnsureWorkspaceApproved
             return $next($request);
         }
 
-        if ($workspace->approval_status !== 'approved') {
+        if ($workspace->approval_status !== ApprovalStatus::Approved->value) {
             return response()->json([
                 'success' => false,
                 'message' => __('api.workspace.approval_required'),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\WorkspaceRole;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\Report\ListReportRequest;
 use App\Http\Requests\Api\V1\Report\StudentRetentionReportRequest;
@@ -56,7 +57,7 @@ class ReportController extends BaseController
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = (string) $request->attributes->get('workspace_role');
 
-        if ($workspaceRole !== 'owner_admin') {
+        if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value) {
             return $this->sendError(__('api.forbidden'), [], 403);
         }
 
@@ -79,7 +80,7 @@ class ReportController extends BaseController
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = (string) $request->attributes->get('workspace_role');
 
-        if ($workspaceRole !== 'owner_admin') {
+        if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value) {
             return $this->sendError(__('api.forbidden'), [], 403);
         }
 
@@ -112,7 +113,7 @@ class ReportController extends BaseController
         $groupBy = (string) ($validated['group_by'] ?? 'day');
 
         $trainerId = null;
-        if ($workspaceRole !== 'owner_admin') {
+        if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value) {
             $trainerId = (int) $request->user()->id;
         } elseif (isset($validated['trainer_id'])) {
             $trainerId = (int) $validated['trainer_id'];

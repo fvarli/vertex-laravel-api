@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\ApprovalStatus;
+use App\Enums\SystemRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Notifications\WorkspaceApprovalRequestedNotification;
@@ -19,7 +21,7 @@ class WorkspaceApprovalNotifier
         }
 
         $platformAdmins = User::query()
-            ->where('system_role', 'platform_admin')
+            ->where('system_role', SystemRole::PlatformAdmin->value)
             ->where('is_active', true)
             ->get();
 
@@ -37,13 +39,13 @@ class WorkspaceApprovalNotifier
             return;
         }
 
-        if ($workspace->approval_status === 'approved') {
+        if ($workspace->approval_status === ApprovalStatus::Approved->value) {
             $owner->notify(new WorkspaceApprovedNotification($workspace));
 
             return;
         }
 
-        if ($workspace->approval_status === 'rejected') {
+        if ($workspace->approval_status === ApprovalStatus::Rejected->value) {
             $owner->notify(new WorkspaceRejectedNotification($workspace));
         }
     }

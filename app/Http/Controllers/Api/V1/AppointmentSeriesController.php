@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\WorkspaceRole;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\AppointmentSeries\ListAppointmentSeriesRequest;
 use App\Http\Requests\Api\V1\AppointmentSeries\StoreAppointmentSeriesRequest;
@@ -29,7 +30,7 @@ class AppointmentSeriesController extends BaseController
     {
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = (string) $request->attributes->get('workspace_role');
-        $trainerUserId = $workspaceRole !== 'owner_admin' ? $request->user()->id : null;
+        $trainerUserId = $workspaceRole !== WorkspaceRole::OwnerAdmin->value ? $request->user()->id : null;
 
         $series = $this->appointmentSeriesService->list($workspaceId, $trainerUserId, $request->validated());
 
@@ -43,18 +44,18 @@ class AppointmentSeriesController extends BaseController
         $data = $request->validated();
         $trainerId = $request->user()->id;
 
-        if ($workspaceRole !== 'owner_admin' && isset($data['trainer_user_id'])) {
+        if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value && isset($data['trainer_user_id'])) {
             return $this->sendError(__('api.forbidden'), [], 403);
         }
 
-        if ($workspaceRole === 'owner_admin' && isset($data['trainer_user_id'])) {
+        if ($workspaceRole === WorkspaceRole::OwnerAdmin->value && isset($data['trainer_user_id'])) {
             $this->workspaceContext->assertTrainerInWorkspace((int) $data['trainer_user_id'], $workspaceId);
             $trainerId = (int) $data['trainer_user_id'];
         }
 
         $student = $this->workspaceContext->assertStudentInWorkspace((int) $data['student_id'], $workspaceId);
 
-        if ($workspaceRole !== 'owner_admin' && (int) $student->trainer_user_id !== (int) $trainerId) {
+        if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value && (int) $student->trainer_user_id !== (int) $trainerId) {
             throw ValidationException::withMessages([
                 'student_id' => [__('api.workspace.membership_required')],
             ]);

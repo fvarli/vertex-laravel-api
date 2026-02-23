@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Workspace;
 
+use App\Enums\ApprovalStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,7 @@ class UpdateWorkspaceApprovalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'approval_status' => ['required', Rule::in(['approved', 'rejected'])],
+            'approval_status' => ['required', Rule::in([ApprovalStatus::Approved->value, ApprovalStatus::Rejected->value])],
             'approval_note' => ['nullable', 'string', 'max:1000'],
         ];
     }

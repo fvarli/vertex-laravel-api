@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\WorkspaceRole;
 use App\Http\Controllers\Api\BaseController;
 use App\Models\Appointment;
 use App\Services\WhatsAppLinkService;
@@ -33,7 +34,7 @@ class WhatsAppController extends BaseController
 
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = (string) $request->attributes->get('workspace_role');
-        $trainerUserId = $workspaceRole === 'owner_admin' ? null : (int) $request->user()->id;
+        $trainerUserId = $workspaceRole === WorkspaceRole::OwnerAdmin->value ? null : (int) $request->user()->id;
 
         $links = $this->whatsAppLinkService->bulkLinks($workspaceId, $trainerUserId, $request->query('date'));
 

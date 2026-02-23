@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\SystemRole;
+use App\Enums\WorkspaceRole;
 use App\Models\User;
 
 class AccessContextService
@@ -19,7 +21,7 @@ class AccessContextService
         }
 
         return [
-            'system_role' => $user->system_role ?? 'workspace_user',
+            'system_role' => $user->system_role ?? SystemRole::WorkspaceUser->value,
             'active_workspace_role' => $workspaceRole,
             'permissions' => $this->resolvePermissions($user, $workspaceId, $workspaceRole),
         ];
@@ -27,7 +29,7 @@ class AccessContextService
 
     private function resolvePermissions(User $user, ?int $workspaceId, ?string $workspaceRole): array
     {
-        if (($user->system_role ?? null) === 'platform_admin') {
+        if (($user->system_role ?? null) === SystemRole::PlatformAdmin->value) {
             return ['*'];
         }
 
@@ -52,8 +54,8 @@ class AccessContextService
         // Backward-compatible fallback while transitioning to explicit RBAC assignments.
         if ($permissions->isEmpty() && $workspaceRole) {
             $permissions = $permissions->merge(match ($workspaceRole) {
-                'owner_admin' => ['workspace.manage', 'students.manage', 'programs.manage', 'appointments.manage', 'calendar.view'],
-                'trainer' => ['students.own', 'programs.own', 'appointments.own', 'calendar.view'],
+                WorkspaceRole::OwnerAdmin->value => ['workspace.manage', 'students.manage', 'programs.manage', 'appointments.manage', 'calendar.view'],
+                WorkspaceRole::Trainer->value => ['students.own', 'programs.own', 'appointments.own', 'calendar.view'],
                 default => [],
             });
         }

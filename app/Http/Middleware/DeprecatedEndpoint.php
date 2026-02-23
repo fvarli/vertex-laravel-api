@@ -13,8 +13,8 @@ class DeprecatedEndpoint
      *
      * Usage: middleware('deprecated:2026-06-01') or middleware('deprecated:2026-06-01,/v2/resource')
      *
-     * @param string $sunset  ISO 8601 date when the endpoint will be removed
-     * @param string|null $link  URL/path of the replacement endpoint
+     * @param  string  $sunset  ISO 8601 date when the endpoint will be removed
+     * @param  string|null  $link  URL/path of the replacement endpoint
      */
     public function handle(Request $request, Closure $next, string $sunset, ?string $link = null): Response
     {

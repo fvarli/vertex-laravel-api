@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\WorkspaceRole;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\Student\ListStudentRequest;
 use App\Http\Requests\Api\V1\Student\ListStudentTimelineRequest;
@@ -35,7 +36,7 @@ class StudentController extends BaseController
     {
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = $request->attributes->get('workspace_role');
-        $trainerUserId = $workspaceRole !== 'owner_admin' ? $request->user()->id : null;
+        $trainerUserId = $workspaceRole !== WorkspaceRole::OwnerAdmin->value ? $request->user()->id : null;
 
         $students = $this->studentService->list($workspaceId, $trainerUserId, $request->validated());
 
@@ -52,11 +53,11 @@ class StudentController extends BaseController
         $data = $request->validated();
         $trainerUserId = $request->user()->id;
 
-        if ($workspaceRole !== 'owner_admin' && isset($data['trainer_user_id'])) {
+        if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value && isset($data['trainer_user_id'])) {
             return $this->sendError(__('api.forbidden'), [], 403);
         }
 
-        if ($workspaceRole === 'owner_admin' && isset($data['trainer_user_id'])) {
+        if ($workspaceRole === WorkspaceRole::OwnerAdmin->value && isset($data['trainer_user_id'])) {
             $this->workspaceContext->assertTrainerInWorkspace((int) $data['trainer_user_id'], $workspaceId);
             $trainerUserId = (int) $data['trainer_user_id'];
         }
@@ -96,7 +97,7 @@ class StudentController extends BaseController
         $workspaceRole = $request->attributes->get('workspace_role');
 
         if (isset($data['trainer_user_id'])) {
-            if ($workspaceRole !== 'owner_admin') {
+            if ($workspaceRole !== WorkspaceRole::OwnerAdmin->value) {
                 return $this->sendError(__('api.forbidden'), [], 403);
             }
 

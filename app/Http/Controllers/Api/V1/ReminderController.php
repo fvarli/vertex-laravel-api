@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\WorkspaceRole;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\Reminder\BulkReminderActionRequest;
 use App\Http\Requests\Api\V1\Reminder\ListReminderRequest;
@@ -37,7 +38,7 @@ class ReminderController extends BaseController
     {
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = (string) $request->attributes->get('workspace_role');
-        $trainerUserId = $workspaceRole !== 'owner_admin' ? $request->user()->id : null;
+        $trainerUserId = $workspaceRole !== WorkspaceRole::OwnerAdmin->value ? $request->user()->id : null;
 
         $reminders = $this->reminderService->listReminders($workspaceId, $trainerUserId, $request->validated());
 
@@ -48,7 +49,7 @@ class ReminderController extends BaseController
     {
         $workspaceId = (int) $request->attributes->get('workspace_id');
         $workspaceRole = (string) $request->attributes->get('workspace_role');
-        $trainerUserId = $workspaceRole !== 'owner_admin' ? $request->user()->id : null;
+        $trainerUserId = $workspaceRole !== WorkspaceRole::OwnerAdmin->value ? $request->user()->id : null;
 
         $fileName = 'reminders_export_'.now()->format('Ymd_His').'.csv';
         $rows = $this->reminderService->listForExport($workspaceId, $trainerUserId, $request->validated());
@@ -211,5 +212,4 @@ class ReminderController extends BaseController
             'items' => AppointmentReminderResource::collection($items),
         ], __('api.reminder.bulk_applied'));
     }
-
 }

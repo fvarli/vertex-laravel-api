@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\WorkspaceRole;
 use App\Models\AppointmentReminder;
 use App\Models\User;
 use App\Services\WorkspaceContextService;
@@ -38,7 +39,7 @@ class AppointmentReminderPolicy
             return false;
         }
 
-        if ($role === 'owner_admin') {
+        if ($role === WorkspaceRole::OwnerAdmin->value) {
             return true;
         }
 

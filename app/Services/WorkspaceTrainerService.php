@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\SystemRole;
+use App\Enums\WorkspaceRole;
 use App\Models\Appointment;
 use App\Models\Role;
 use App\Models\Student;
@@ -54,7 +56,7 @@ class WorkspaceTrainerService
             ->join('workspace_user', function ($join) use ($workspaceId) {
                 $join->on('workspace_user.user_id', '=', 'users.id')
                     ->where('workspace_user.workspace_id', $workspaceId)
-                    ->where('workspace_user.role', 'trainer');
+                    ->where('workspace_user.role', WorkspaceRole::Trainer->value);
             })
             ->leftJoinSub($studentCounts, 'student_counts', 'student_counts.trainer_user_id', '=', 'users.id')
             ->leftJoinSub($todayAppointmentCounts, 'today_appointment_counts', 'today_appointment_counts.trainer_user_id', '=', 'users.id')
@@ -109,13 +111,13 @@ class WorkspaceTrainerService
                 'phone' => isset($data['phone']) ? trim((string) $data['phone']) : null,
                 'password' => (string) $data['password'],
                 'is_active' => true,
-                'system_role' => 'workspace_user',
+                'system_role' => SystemRole::WorkspaceUser->value,
                 'email_verified_at' => now(),
                 'active_workspace_id' => $workspaceId,
             ]);
 
             $workspace->users()->syncWithoutDetaching([
-                $user->id => ['role' => 'trainer', 'is_active' => true],
+                $user->id => ['role' => WorkspaceRole::Trainer->value, 'is_active' => true],
             ]);
 
             $trainerRole = Role::query()->where('name', 'trainer')->first();

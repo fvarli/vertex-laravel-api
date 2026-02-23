@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\ApprovalStatus;
+use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -38,12 +40,12 @@ class WorkspaceService
             $workspace = Workspace::query()->create([
                 'name' => trim($name),
                 'owner_user_id' => $user->id,
-                'approval_status' => 'pending',
+                'approval_status' => ApprovalStatus::Pending->value,
                 'approval_requested_at' => now(),
             ]);
 
             $workspace->users()->syncWithoutDetaching([
-                $user->id => ['role' => 'owner_admin', 'is_active' => true],
+                $user->id => ['role' => WorkspaceRole::OwnerAdmin->value, 'is_active' => true],
             ]);
 
             if (! $user->active_workspace_id) {

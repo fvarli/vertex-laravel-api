@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\WorkspaceRole;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\Workspace;
@@ -48,7 +49,7 @@ class WorkspaceContextService
 
     public function isOwnerAdmin(User $user, int $workspaceId): bool
     {
-        return $this->getRole($user, $workspaceId) === 'owner_admin';
+        return $this->getRole($user, $workspaceId) === WorkspaceRole::OwnerAdmin->value;
     }
 
     /**

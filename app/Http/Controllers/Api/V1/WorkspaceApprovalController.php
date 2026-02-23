@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\ApprovalStatus;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\Workspace\UpdateWorkspaceApprovalRequest;
 use App\Http\Resources\WorkspaceResource;
@@ -27,7 +28,7 @@ class WorkspaceApprovalController extends BaseController
         $validated = $request->validated();
         $note = isset($validated['approval_note']) ? trim((string) $validated['approval_note']) : null;
 
-        $workspace = $validated['approval_status'] === 'approved'
+        $workspace = $validated['approval_status'] === ApprovalStatus::Approved->value
             ? $this->workspaceApprovalService->approve($workspace, $request->user(), $note)
             : $this->workspaceApprovalService->reject($workspace, $request->user(), $note);
 

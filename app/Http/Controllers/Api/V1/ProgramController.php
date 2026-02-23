@@ -17,7 +17,6 @@ use App\Services\DomainAuditService;
 use App\Services\ProgramService;
 use Illuminate\Http\JsonResponse;
 
-
 class ProgramController extends BaseController
 {
     private const AUDIT_FIELDS = ['title', 'status', 'week_start_date', 'trainer_user_id', 'student_id'];
