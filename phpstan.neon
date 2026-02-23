@@ -1,0 +1,21 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    paths:
+        - app
+    level: 5
+    ignoreErrors:
+        # JsonResource uses magic __get to proxy model properties
+        -
+            identifier: property.notFound
+            path: app/Http/Resources/*
+        # $request->user() can return Authenticatable|null, but in auth:sanctum routes it's always User
+        -
+            identifier: method.nonObject
+            reportUnmatched: false
+        # Nullable access on relationships that are always loaded in context
+        -
+            identifier: nullsafe.neverNull
+            reportUnmatched: false

@@ -1,0 +1,349 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/AppointmentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reminder_policy\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/AppointmentController.php
+
+		-
+			message: '#^Parameter \$series of method App\\Services\\AppointmentSeriesService\:\:updateSeries\(\) expects App\\Models\\AppointmentSeries, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/AppointmentController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reminder_policy\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/V1/AppointmentSeriesController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Http\\Request\:\:validated\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/ReportController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Http\\Request\:\:validated\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/ReportExportController.php
+
+		-
+			message: '#^Parameter \#1 \$student of method App\\Services\\WhatsAppLinkService\:\:build\(\) expects App\\Models\\Student, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/WhatsAppController.php
+
+		-
+			message: '#^Instanceof between Illuminate\\Http\\JsonResponse and Illuminate\\Http\\JsonResponse will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Http/Middleware/EnforceIdempotencyForAppointments.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/AppointmentCancelledNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/AppointmentCreatedNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Notifications/AppointmentReminderNotification.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$trainer_user_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Policies/AppointmentReminderPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$workspace_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Policies/AppointmentReminderPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$permissions\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/AccessContextService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Relations\\Pivot\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/AccessContextService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reminder_policy\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Services/AppointmentReminderService.php
+
+		-
+			message: '#^Offset ''escalate_on…'' on array\{max_attempts\: int, backoff_minutes\: list\<int\>, escalate_on_exhausted\: bool\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AppointmentReminderService.php
+
+		-
+			message: '#^Offset ''byweekday'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AppointmentSeriesService.php
+
+		-
+			message: '#^Offset ''count'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AppointmentSeriesService.php
+
+		-
+			message: '#^Offset ''freq'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AppointmentSeriesService.php
+
+		-
+			message: '#^Offset ''interval'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/AppointmentSeriesService.php
+
+		-
+			message: '#^Offset ''until'' on array\{\}\|string in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: app/Services/AppointmentSeriesService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''weekly'' and ''monthly'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/AppointmentSeriesService.php
+
+		-
+			message: '#^Ternary operator condition is always false\.$#'
+			identifier: ternary.alwaysFalse
+			count: 1
+			path: app/Services/AppointmentSeriesService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reminder_policy\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/AppointmentService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$completed_sessions\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/DashboardService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$day_of_week\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Services/ProgramService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$exercise\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ProgramService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$notes\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ProgramService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$order_no\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Services/ProgramService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$reps\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ProgramService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$rest_seconds\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ProgramService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sets\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/ProgramService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 2
+			path: app/Services/ProgramService.php
+
+		-
+			message: '#^Parameter \#1 \$groupBy of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:groupBy\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: string\)\|list\<Closure\|string\>\|string, Closure\(App\\Models\\Appointment\)\: string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/ReportService.php
+
+		-
+			message: '#^Parameter \#1 \$groupBy of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:groupBy\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: string\)\|list\<Closure\|string\>\|string, Closure\(App\\Models\\AppointmentReminder\)\: string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/ReportService.php
+
+		-
+			message: '#^Parameter \#1 \$groupBy of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:groupBy\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: string\)\|list\<Closure\|string\>\|string, Closure\(App\\Models\\Program\)\: string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/ReportService.php
+
+		-
+			message: '#^Parameter \#1 \$groupBy of method Illuminate\\Support\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:groupBy\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: string\)\|list\<Closure\|string\>\|string, Closure\(App\\Models\\Student\)\: string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/ReportService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Program\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/StudentTimelineService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:sortByDesc\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/StudentTimelineService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\WebhookEndpoint\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/WebhookService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WhatsAppLinkService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WhatsAppLinkService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$surname\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WhatsAppLinkService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Appointment\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/WhatsAppLinkService.php
+
+		-
+			message: '#^Parameter \#1 \$student of method App\\Services\\WhatsAppLinkService\:\:build\(\) expects App\\Models\\Student, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/WhatsAppLinkService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:notify\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Services/WorkspaceApprovalNotifier.php
+
+		-
+			message: '#^Parameter \#2 \$owner of class App\\Notifications\\WorkspaceApprovalRequestedNotification constructor expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/WorkspaceApprovalNotifier.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Relations\\Pivot\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WorkspaceContextService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WorkspaceService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WorkspaceService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WorkspaceService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$pivot\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/WorkspaceService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$surname\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WorkspaceService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/WorkspaceService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$student_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WorkspaceTrainerService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$today_appointments\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WorkspaceTrainerService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\User\:\:\$upcoming_7d_appointments\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WorkspaceTrainerService.php
