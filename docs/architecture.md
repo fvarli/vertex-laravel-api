@@ -438,6 +438,98 @@ public function handle(Request $request, Closure $next): Response
 }
 ```
 
+### 6.5 User Flow: Workspace Selection
+
+After login, the client must select a workspace before accessing any domain endpoint:
+
+```
+Login (POST /login)
+  │
+  ▼
+Token received
+  │
+  ▼
+GET /me/workspaces
+  │  → Returns list of workspaces the user belongs to,
+  │    each with role ('owner_admin' | 'trainer') and approval_status
+  │
+  ▼
+POST /workspaces/{id}/switch
+  │  → Sets users.active_workspace_id on the server
+  │  → Returns workspace details and user's role
+  │
+  ▼
+Domain endpoints now available
+  │  → GET /students, POST /appointments, GET /calendar, etc.
+  │  → All scoped to the active workspace automatically
+  │
+  ▼
+Switch workspace anytime
+     → POST /workspaces/{other_id}/switch
+     → All subsequent requests are scoped to the new workspace
+```
+
+If the user calls a domain endpoint without switching to a workspace first, the `workspace.context` middleware returns `403 Forbidden`.
+
+### 6.6 Workspace Approval Flow
+
+New workspaces go through an approval lifecycle before full access is granted:
+
+```
+POST /workspaces (create)
+  │
+  ▼
+┌─────────┐     platform_admin      ┌──────────┐
+│ pending │ ──── approves ────────► │ approved │  → Full workspace access
+└─────────┘                         └──────────┘
+     │
+     │          platform_admin      ┌──────────┐
+     └────────── rejects ─────────► │ rejected │  → Read-only, mutation blocked
+                                    └──────────┘
+```
+
+**Behavior by status:**
+
+| Status | Can read data? | Can create/update/delete? | Frontend indicator |
+|--------|:--------------:|:-------------------------:|-------------------|
+| `pending` | Yes | No — mutations blocked | Yellow approval banner |
+| `approved` | Yes | Yes — full access | No banner |
+| `rejected` | Yes | No — mutations blocked | Red rejection banner with note |
+
+**Endpoints:**
+
+- `GET /platform/workspaces/pending` — platform admin lists pending workspaces
+- `PATCH /platform/workspaces/{workspace}/approval` — platform admin approves or rejects (with optional `approval_note`)
+
+Both the workspace owner and affected users receive in-app notifications (via `database` and `mail` channels) when a workspace is approved or rejected.
+
+### 6.7 Real-World Scenario
+
+A concrete example showing how one user interacts with multiple workspaces:
+
+```
+User: Mehmet (system_role: workspace_user)
+│
+├── "Fit Life Gym" ──── role: owner_admin
+│     │
+│     ├── 3 trainers reporting to Mehmet
+│     ├── 50 students (all visible to Mehmet)
+│     ├── Mehmet can manage all data: students, programs,
+│     │   appointments, trainers, workspace settings
+│     └── Full dashboard with aggregated KPIs
+│
+└── "Yoga Center" ──── role: trainer
+      │
+      ├── Mehmet sees only his 8 assigned students
+      ├── Cannot see other trainers' students or appointments
+      ├── Cannot access workspace settings or trainer management
+      └── Dashboard shows only his own KPIs
+```
+
+When Mehmet calls `POST /workspaces/{yoga_center_id}/switch`, the entire API scope changes — every subsequent query is filtered by `workspace_id` and his role switches from `owner_admin` to `trainer`. From the application's perspective, it is as if he logged into a completely different system.
+
+**Key insight:** The same user, same token, same session — but different data visibility and permissions depending on which workspace is active. This is the foundation that makes Vertex viable as a multi-tenant SaaS platform.
+
 ---
 
 ## 7. RBAC System
