@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\SystemRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Program;
 use App\Models\User;
@@ -28,6 +29,10 @@ class ProgramPolicy
 
     private function canAccess(User $user, int $workspaceId, int $trainerId): bool
     {
+        if ($user->system_role === SystemRole::PlatformAdmin->value) {
+            return true;
+        }
+
         if ((int) $user->active_workspace_id !== $workspaceId) {
             return false;
         }

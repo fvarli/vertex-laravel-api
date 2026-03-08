@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\SystemRole;
+use App\Enums\WorkspaceRole;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,7 +20,11 @@ class WorkspaceResource extends JsonResource
             'approved_at' => $this->approved_at,
             'approved_by_user_id' => $this->approved_by_user_id,
             'approval_note' => $this->approval_note,
-            'role' => $this->pivot->role ?? null,
+            'role' => $this->pivot->role ?? (
+                auth()->user()?->system_role === SystemRole::PlatformAdmin->value
+                    ? WorkspaceRole::OwnerAdmin->value
+                    : null
+            ),
             'is_active_membership' => $this->pivot->is_active ?? null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

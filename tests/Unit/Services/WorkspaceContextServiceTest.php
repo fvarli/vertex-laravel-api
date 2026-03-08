@@ -71,6 +71,17 @@ class WorkspaceContextServiceTest extends TestCase
         $this->service->getActiveWorkspace($owner);
     }
 
+    public function test_get_active_workspace_skips_membership_for_platform_admin(): void
+    {
+        $admin = User::factory()->platformAdmin()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => User::factory()->create()->id]);
+        $admin->update(['active_workspace_id' => $workspace->id]);
+
+        $result = $this->service->getActiveWorkspace($admin);
+
+        $this->assertEquals($workspace->id, $result->id);
+    }
+
     public function test_get_role_returns_owner_admin(): void
     {
         $owner = User::factory()->ownerAdmin()->create();
@@ -87,6 +98,14 @@ class WorkspaceContextServiceTest extends TestCase
         $workspace->users()->attach($trainer->id, ['role' => 'trainer', 'is_active' => true]);
 
         $this->assertEquals('trainer', $this->service->getRole($trainer, $workspace->id));
+    }
+
+    public function test_get_role_returns_owner_admin_for_platform_admin(): void
+    {
+        $admin = User::factory()->platformAdmin()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => User::factory()->create()->id]);
+
+        $this->assertEquals('owner_admin', $this->service->getRole($admin, $workspace->id));
     }
 
     public function test_get_role_returns_null_when_no_membership(): void

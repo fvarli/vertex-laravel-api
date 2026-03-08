@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\SystemRole;
 use App\Enums\WorkspaceRole;
 use App\Models\Student;
 use App\Models\User;
@@ -25,6 +26,10 @@ class WorkspaceContextService
             throw new AuthorizationException(__('api.workspace.no_active_workspace'));
         }
 
+        if ($user->system_role === SystemRole::PlatformAdmin->value) {
+            return $workspace;
+        }
+
         $membership = $user->workspaces()
             ->where('workspaces.id', $workspace->id)
             ->wherePivot('is_active', true)
@@ -39,6 +44,10 @@ class WorkspaceContextService
 
     public function getRole(User $user, int $workspaceId): ?string
     {
+        if ($user->system_role === SystemRole::PlatformAdmin->value) {
+            return WorkspaceRole::OwnerAdmin->value;
+        }
+
         $workspace = $user->workspaces()
             ->where('workspaces.id', $workspaceId)
             ->wherePivot('is_active', true)

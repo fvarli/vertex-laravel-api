@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ApprovalStatus;
+use App\Enums\SystemRole;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
 use App\Models\Workspace;
@@ -16,6 +17,10 @@ class WorkspaceService
 
     public function listForUser(User $user): Collection
     {
+        if ($user->system_role === SystemRole::PlatformAdmin->value) {
+            return Workspace::query()->orderBy('id')->get();
+        }
+
         return $user->workspaces()->orderBy('workspaces.id')->get();
     }
 
@@ -63,13 +68,15 @@ class WorkspaceService
 
     public function switchWorkspace(User $user, Workspace $workspace): void
     {
-        $hasMembership = $user->workspaces()
-            ->where('workspaces.id', $workspace->id)
-            ->wherePivot('is_active', true)
-            ->exists();
+        if ($user->system_role !== SystemRole::PlatformAdmin->value) {
+            $hasMembership = $user->workspaces()
+                ->where('workspaces.id', $workspace->id)
+                ->wherePivot('is_active', true)
+                ->exists();
 
-        if (! $hasMembership) {
-            throw new AuthorizationException(__('api.workspace.membership_required'));
+            if (! $hasMembership) {
+                throw new AuthorizationException(__('api.workspace.membership_required'));
+            }
         }
 
         $user->update(['active_workspace_id' => $workspace->id]);

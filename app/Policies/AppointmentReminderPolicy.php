@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\SystemRole;
 use App\Enums\WorkspaceRole;
 use App\Models\AppointmentReminder;
 use App\Models\User;
@@ -23,6 +24,10 @@ class AppointmentReminderPolicy
 
     private function canAccess(User $user, AppointmentReminder $reminder): bool
     {
+        if ($user->system_role === SystemRole::PlatformAdmin->value) {
+            return true;
+        }
+
         $appointment = $reminder->appointment;
 
         if (! $appointment) {

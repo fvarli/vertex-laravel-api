@@ -66,6 +66,21 @@ class EnsureWorkspaceContextTest extends TestCase
         $this->middleware->handle($request, fn () => response('ok'));
     }
 
+    public function test_platform_admin_bypasses_membership_check(): void
+    {
+        $admin = User::factory()->platformAdmin()->create();
+        $workspace = Workspace::factory()->create(['owner_user_id' => User::factory()->create()->id]);
+        $admin->update(['active_workspace_id' => $workspace->id]);
+
+        $request = Request::create('/test');
+        $request->setUserResolver(fn () => $admin);
+
+        $this->middleware->handle($request, fn () => response('ok'));
+
+        $this->assertEquals($workspace->id, $request->attributes->get('workspace_id'));
+        $this->assertEquals('owner_admin', $request->attributes->get('workspace_role'));
+    }
+
     public function test_passes_through_when_no_user(): void
     {
         $request = Request::create('/test');

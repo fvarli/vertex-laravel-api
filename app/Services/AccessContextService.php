@@ -14,10 +14,14 @@ class AccessContextService
         $workspaceId = $user->active_workspace_id;
 
         if ($workspaceId) {
-            $workspaceRole = $user->workspaces()
-                ->where('workspaces.id', $workspaceId)
-                ->wherePivot('is_active', true)
-                ->first()?->pivot?->role;
+            if (($user->system_role ?? null) === SystemRole::PlatformAdmin->value) {
+                $workspaceRole = WorkspaceRole::OwnerAdmin->value;
+            } else {
+                $workspaceRole = $user->workspaces()
+                    ->where('workspaces.id', $workspaceId)
+                    ->wherePivot('is_active', true)
+                    ->first()?->pivot?->role;
+            }
         }
 
         return [

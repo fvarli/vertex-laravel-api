@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\SystemRole;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\V1\Workspace\StoreWorkspaceRequest;
 use App\Http\Requests\Api\V1\Workspace\UpdateWorkspaceRequest;
@@ -50,12 +51,16 @@ class WorkspaceController extends BaseController
      */
     public function members(Request $request, Workspace $workspace): JsonResponse
     {
-        $hasMembership = $request->user()->workspaces()
-            ->where('workspaces.id', $workspace->id)
-            ->exists();
+        $user = $request->user();
 
-        if (! $hasMembership) {
-            return $this->sendError(__('api.workspace.membership_required'), [], 403);
+        if ($user->system_role !== SystemRole::PlatformAdmin->value) {
+            $hasMembership = $user->workspaces()
+                ->where('workspaces.id', $workspace->id)
+                ->exists();
+
+            if (! $hasMembership) {
+                return $this->sendError(__('api.workspace.membership_required'), [], 403);
+            }
         }
 
         return $this->sendResponse($this->workspaceService->members($workspace));
